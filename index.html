@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Requisições — Siemens Energy FY26</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+--bg:#05050f;--surface:#0d0d1a;--card:#111120;--card-hover:#17172a;
+--border:#1a1a32;--border-light:#242440;
+--accent-green:#00ff9d;--accent-blue:#4f8ef7;--accent-orange:#ff9f0a;
+--accent-purple:#c084fc;--accent-pink:#f72b8e;
+--text-primary:#eef0ff;--text-secondary:#7c85b3;--text-muted:#434570;
+--glow-green:rgba(0,255,157,.18);--glow-purple:rgba(192,132,252,.18);
+--glow-blue:rgba(79,142,247,.15);--glow-orange:rgba(255,159,10,.13);
+}
+html{scroll-behavior:smooth}
+body{
+background:var(--bg);color:var(--text-primary);
+font-family:'Inter',sans-serif;font-size:14px;line-height:1.6;min-height:100vh;
+background-image:
+  radial-gradient(ellipse 90% 55% at 50% -15%,rgba(192,132,252,.09) 0%,transparent 55%),
+  radial-gradient(ellipse 60% 45% at 15% 60%,rgba(0,255,157,.05) 0%,transparent 50%),
+  radial-gradient(ellipse 50% 40% at 85% 95%,rgba(79,142,247,.06) 0%,transparent 50%);
+}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--surface)}
+::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:3px}
+
+/* HEADER */
+.header{
+background:linear-gradient(135deg,rgba(16,16,28,.98),rgba(20,20,34,.98));
+border-bottom:1px solid var(--border);padding:0 2rem;
+position:sticky;top:0;z-index:100;backdrop-filter:blur(20px);
+}
+.header-inner{
+max-width:1600px;margin:0 auto;
+display:flex;align-items:center;justify-content:space-between;gap:1.5rem;height:70px;
+}
+.header-brand{display:flex;align-items:center;gap:1rem}
+.header-logo{
+width:38px;height:38px;
+background:linear-gradient(135deg,#6d28d9,#00ff9d);
+border-radius:10px;display:flex;align-items:center;justify-content:center;
+font-size:13px;font-weight:800;color:#fff;letter-spacing:-.5px;
+box-shadow:0 0 22px rgba(0,255,157,.35),0 0 8px rgba(192,132,252,.3);
+}
+.header-title{font-size:1.05rem;font-weight:700;color:var(--text-primary)}
+.header-sub{font-size:.73rem;color:var(--text-muted);margin-top:1px}
+.header-right{display:flex;align-items:center;gap:.75rem}
+.live-badge{
+display:flex;align-items:center;gap:.4rem;
+padding:.3rem .75rem;border-radius:20px;
+background:rgba(0,255,157,.07);border:1px solid rgba(0,255,157,.25);
+font-size:.68rem;font-weight:600;color:var(--accent-green);letter-spacing:.04em;
+box-shadow:0 0 10px rgba(0,255,157,.1);
+}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--accent-green);animation:blink 2s infinite;box-shadow:0 0 6px var(--accent-green)}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.period-badge{
+padding:.3rem .75rem;border-radius:20px;
+background:rgba(192,132,252,.07);border:1px solid rgba(192,132,252,.25);
+font-size:.68rem;font-weight:500;color:var(--accent-purple);
+}
+
+/* FILTER */
+.filter-bar{
+max-width:1600px;margin:0 auto;
+padding:1.25rem 2rem .25rem;
+display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+}
+.filter-label{font-size:.7rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.1em}
+.filter-btns{display:flex;gap:.35rem}
+.filter-btn{
+padding:.38rem .85rem;border-radius:8px;border:1px solid var(--border-light);
+background:var(--surface);color:var(--text-secondary);
+font-size:.75rem;font-weight:500;cursor:pointer;transition:all .18s;font-family:'Inter',sans-serif;
+}
+.filter-btn:hover{border-color:var(--accent-blue);color:var(--text-primary);background:rgba(79,142,247,.06)}
+.filter-btn.active{
+background:linear-gradient(135deg,rgba(192,132,252,.18),rgba(0,255,157,.08));
+border-color:var(--accent-purple);color:var(--accent-purple);font-weight:600;
+box-shadow:0 0 16px rgba(192,132,252,.2);
+}
+
+/* MAIN */
+.main{max-width:1600px;margin:0 auto;padding:.75rem 2rem 3rem}
+
+/* KPI GRID */
+.kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:.85rem;margin-bottom:1.25rem}
+@media(max-width:1200px){.kpi-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:700px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+
+.kpi-card{
+background:var(--card);border:1px solid var(--border);border-radius:14px;
+padding:1.2rem 1.35rem;cursor:default;
+transition:transform .22s,box-shadow .22s,border-color .22s;
+position:relative;overflow:hidden;animation:fadeUp .45s ease both;
+}
+/* Default glow per card type */
+.kpi-card.green{
+border-color:rgba(0,255,157,.2);
+box-shadow:0 0 18px rgba(0,255,157,.1),inset 0 0 30px rgba(0,255,157,.03);
+}
+.kpi-card.blue{
+border-color:rgba(79,142,247,.22);
+box-shadow:0 0 18px rgba(79,142,247,.1),inset 0 0 30px rgba(79,142,247,.03);
+}
+.kpi-card.orange{
+border-color:rgba(255,159,10,.2);
+box-shadow:0 0 18px rgba(255,159,10,.09),inset 0 0 30px rgba(255,159,10,.03);
+}
+.kpi-card.purple{
+border-color:rgba(192,132,252,.22);
+box-shadow:0 0 18px rgba(192,132,252,.12),inset 0 0 30px rgba(192,132,252,.04);
+}
+/* Hover: intensify glow + lift */
+.kpi-card.green:hover{transform:translateY(-4px);box-shadow:0 0 32px rgba(0,255,157,.22),0 12px 36px rgba(0,0,0,.4),inset 0 0 40px rgba(0,255,157,.06);border-color:rgba(0,255,157,.45)}
+.kpi-card.blue:hover{transform:translateY(-4px);box-shadow:0 0 32px rgba(79,142,247,.22),0 12px 36px rgba(0,0,0,.4),inset 0 0 40px rgba(79,142,247,.06);border-color:rgba(79,142,247,.45)}
+.kpi-card.orange:hover{transform:translateY(-4px);box-shadow:0 0 32px rgba(255,159,10,.18),0 12px 36px rgba(0,0,0,.4),inset 0 0 40px rgba(255,159,10,.05);border-color:rgba(255,159,10,.4)}
+.kpi-card.purple:hover{transform:translateY(-4px);box-shadow:0 0 32px rgba(192,132,252,.24),0 12px 36px rgba(0,0,0,.4),inset 0 0 40px rgba(192,132,252,.07);border-color:rgba(192,132,252,.48)}
+/* Overlay gradient — visible by default at low opacity */
+.kpi-card::before{
+content:'';position:absolute;inset:0;border-radius:14px;pointer-events:none;
+transition:opacity .22s;
+}
+.kpi-card.green::before{background:radial-gradient(ellipse 80% 60% at 10% 0%,rgba(0,255,157,.1),transparent 70%);opacity:1}
+.kpi-card.blue::before{background:radial-gradient(ellipse 80% 60% at 10% 0%,rgba(79,142,247,.1),transparent 70%);opacity:1}
+.kpi-card.orange::before{background:radial-gradient(ellipse 80% 60% at 10% 0%,rgba(255,159,10,.08),transparent 70%);opacity:1}
+.kpi-card.purple::before{background:radial-gradient(ellipse 80% 60% at 10% 0%,rgba(192,132,252,.1),transparent 70%);opacity:1}
+.kpi-card.green:hover::before{opacity:1.6}
+.kpi-card.purple:hover::before{opacity:1.8}
+/* Accent bar — wider + glowing */
+.kpi-accent{position:absolute;top:0;left:0;width:4px;height:100%;border-radius:14px 0 0 14px}
+.green .kpi-accent{background:linear-gradient(to bottom,var(--accent-green),rgba(0,255,157,.1));box-shadow:0 0 10px rgba(0,255,157,.6)}
+.blue .kpi-accent{background:linear-gradient(to bottom,var(--accent-blue),rgba(79,142,247,.1));box-shadow:0 0 10px rgba(79,142,247,.5)}
+.orange .kpi-accent{background:linear-gradient(to bottom,var(--accent-orange),rgba(255,159,10,.1));box-shadow:0 0 10px rgba(255,159,10,.4)}
+.purple .kpi-accent{background:linear-gradient(to bottom,var(--accent-purple),rgba(192,132,252,.1));box-shadow:0 0 10px rgba(192,132,252,.6)}
+/* KPI text */
+.kpi-icon{font-size:1.1rem;margin-bottom:.7rem;display:block}
+.kpi-label{font-size:.67rem;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.09em;margin-bottom:.35rem}
+.kpi-value{font-size:1.5rem;font-weight:700;line-height:1.1;margin-bottom:.25rem;letter-spacing:-.02em;text-shadow:0 0 20px currentColor}
+.green .kpi-value{color:var(--accent-green)}
+.blue .kpi-value{color:var(--accent-blue)}
+.orange .kpi-value{color:var(--accent-orange)}
+.purple .kpi-value{color:var(--accent-purple)}
+.kpi-sub{font-size:.68rem;color:var(--text-muted);line-height:1.3}
+
+/* SECTION TITLE */
+.section-title{
+font-size:.68rem;font-weight:700;color:#5a5d8a;
+text-transform:uppercase;letter-spacing:.14em;
+margin:1.4rem 0 .7rem;display:flex;align-items:center;gap:.8rem;
+}
+.section-title::after{content:'';flex:1;height:1px;background:linear-gradient(to right,rgba(192,132,252,.3),var(--border),transparent)}
+
+/* CHART CARDS */
+.charts-grid{display:grid;gap:.85rem}
+.row-full{grid-template-columns:1fr}
+.row-half{grid-template-columns:1fr 1fr}
+.row-6040{grid-template-columns:1.5fr 1fr}
+@media(max-width:920px){.row-half,.row-6040{grid-template-columns:1fr}}
+
+.chart-card{
+background:var(--card);border:1px solid var(--border);border-radius:14px;
+padding:1.4rem 1.5rem;animation:fadeUp .5s ease both;transition:border-color .2s;
+}
+.chart-card:hover{border-color:var(--border-light)}
+.chart-header{margin-bottom:1.1rem}
+.chart-title{font-size:.85rem;font-weight:600;color:var(--text-primary);margin-bottom:.2rem}
+.chart-insight{font-size:.7rem;color:var(--text-muted);line-height:1.4}
+.chart-insight strong{color:var(--text-secondary)}
+
+/* TABLE */
+.table-card{
+background:var(--card);border:1px solid var(--border);border-radius:14px;
+padding:1.4rem 1.5rem;animation:fadeUp .6s ease both;margin-top:.85rem;
+}
+.table-header{
+display:flex;align-items:center;justify-content:space-between;
+margin-bottom:1.1rem;flex-wrap:wrap;gap:.6rem;
+}
+.table-title{font-size:.85rem;font-weight:600;color:var(--text-primary)}
+.table-controls{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap}
+.table-count{font-size:.68rem;color:var(--text-muted);background:var(--surface);
+padding:.22rem .6rem;border-radius:6px;border:1px solid var(--border)}
+.search-box{
+padding:.38rem .8rem;border-radius:8px;border:1px solid var(--border-light);
+background:var(--surface);color:var(--text-primary);font-family:'Inter',sans-serif;
+font-size:.75rem;width:210px;transition:border-color .2s;outline:none;
+}
+.search-box:focus{border-color:var(--accent-blue)}
+.search-box::placeholder{color:var(--text-muted)}
+.table-wrap{overflow-x:auto;margin-top:.5rem}
+table{width:100%;border-collapse:collapse;font-size:.75rem}
+thead th{
+padding:.6rem 1rem;text-align:left;
+font-size:.62rem;font-weight:700;color:var(--text-muted);
+text-transform:uppercase;letter-spacing:.09em;
+background:var(--surface);border-bottom:1px solid var(--border);
+white-space:nowrap;
+}
+tbody tr{border-bottom:1px solid rgba(30,30,53,.4);transition:background .12s}
+tbody tr:hover{background:rgba(192,132,252,.05)}
+tbody td{padding:.55rem 1rem;color:var(--text-secondary);white-space:nowrap;max-width:200px;overflow:hidden;text-overflow:ellipsis}
+tbody td.bold{color:var(--text-primary);font-weight:500}
+tbody td.mono{font-variant-numeric:tabular-nums;text-align:right;color:var(--text-primary)}
+.badge{display:inline-flex;align-items:center;padding:.18rem .55rem;border-radius:5px;
+font-size:.64rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.badge-fin{background:rgba(0,255,157,.1);color:var(--accent-green);box-shadow:0 0 8px rgba(0,255,157,.15)}
+.badge-ent{background:rgba(255,159,10,.1);color:var(--accent-orange)}
+.badge-neg{background:rgba(79,142,247,.1);color:var(--accent-blue)}
+.badge-def{background:rgba(192,132,252,.1);color:var(--accent-purple)}
+.mod-badge{display:inline-flex;padding:.15rem .5rem;border-radius:4px;font-size:.63rem;font-weight:500}
+.mod-mat{background:rgba(79,142,247,.1);color:#4f8ef7}
+.mod-srv{background:rgba(255,159,10,.1);color:#ff9f0a}
+.mod-oi{background:rgba(0,255,157,.1);color:#00ff9d}
+
+/* FOOTER */
+.footer{text-align:center;padding:1.75rem;font-size:.68rem;color:var(--text-muted);border-top:1px solid var(--border)}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.kpi-card:nth-child(1){animation-delay:.04s}
+.kpi-card:nth-child(2){animation-delay:.08s}
+.kpi-card:nth-child(3){animation-delay:.12s}
+.kpi-card:nth-child(4){animation-delay:.16s}
+.kpi-card:nth-child(5){animation-delay:.20s}
+.kpi-card:nth-child(6){animation-delay:.24s}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-inner">
+    <div class="header-brand">
+      <div class="header-logo">SE</div>
+      <div>
+        <div class="header-title">Dashboard de Requisi&#231;&#245;es de Compras</div>
+        <div class="header-sub">Siemens Energy &mdash; FY26 &middot; Ago/2025 &ndash; Mai/2026 &middot; Victor Rom&#227;o</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="period-badge">212 registros</div>
+      <div class="live-badge"><span class="live-dot"></span>FY26 ATIVO</div>
+    </div>
+  </div>
+</header>
+
+<div class="filter-bar">
+  <span class="filter-label">&#128197; Per&#237;odo</span>
+  <div class="filter-btns">
+    <button class="filter-btn" data-months="3" onclick="setFilter(3)">&#218;lt. 3 meses</button>
+    <button class="filter-btn" data-months="6" onclick="setFilter(6)">&#218;lt. 6 meses</button>
+    <button class="filter-btn" data-months="9" onclick="setFilter(9)">&#218;lt. 9 meses</button>
+    <button class="filter-btn active" data-months="0" onclick="setFilter(0)">Todo FY26</button>
+  </div>
+</div>
+
+<main class="main">
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi-card green">
+      <div class="kpi-accent"></div><span class="kpi-icon">&#128176;</span>
+      <div class="kpi-label">Despesa Total</div>
+      <div class="kpi-value" id="kpi-despesa">—</div>
+      <div class="kpi-sub" id="kpi-despesa-sub">—</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-accent"></div><span class="kpi-icon">&#128203;</span>
+      <div class="kpi-label">Requisi&#231;&#245;es</div>
+      <div class="kpi-value" id="kpi-reqs">—</div>
+      <div class="kpi-sub" id="kpi-reqs-sub">—</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-accent"></div><span class="kpi-icon">&#128221;</span>
+      <div class="kpi-label">Pedidos Emitidos</div>
+      <div class="kpi-value" id="kpi-pedidos">—</div>
+      <div class="kpi-sub" id="kpi-pedidos-sub">ordens de compra</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-accent"></div><span class="kpi-icon">&#127970;</span>
+      <div class="kpi-label">Fornecedores</div>
+      <div class="kpi-value" id="kpi-forn">—</div>
+      <div class="kpi-sub" id="kpi-forn-sub">ativos no per&#237;odo</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-accent"></div><span class="kpi-icon">&#128200;</span>
+      <div class="kpi-label">M&#233;dia Mensal</div>
+      <div class="kpi-value" id="kpi-media">—</div>
+      <div class="kpi-sub" id="kpi-media-sub">—</div>
+    </div>
+    <div class="kpi-card purple">
+      <div class="kpi-accent"></div><span class="kpi-icon">&#128202;</span>
+      <div class="kpi-label">M&#233;dia Req / M&#234;s</div>
+      <div class="kpi-value" id="kpi-avgreq">—</div>
+      <div class="kpi-sub" id="kpi-avgreq-sub">requisi&#231;&#245;es / m&#234;s</div>
+    </div>
+  </div>
+
+  <div class="section-title">&#9651; Cadência de Gasto FY26</div>
+
+  <!-- CHART 1: CURVA S — Despesa Acumulada -->
+  <div class="charts-grid row-full" style="margin-bottom:.85rem">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Curva S &mdash; Despesa Acumulada vs. Volume Mensal</div>
+        <div class="chart-insight" id="insight-curvas">Carregando...</div>
+      </div>
+      <div style="position:relative;height:310px">
+        <canvas id="chartCurvaS"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">&#9672; Composi&#231;&#227;o da Despesa</div>
+
+  <!-- CHARTS ROW 2: Modelo + Status -->
+  <div class="charts-grid row-half" style="margin-bottom:.85rem">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Despesa por Modelo de Compra</div>
+        <div class="chart-insight" id="insight-modelo">—</div>
+      </div>
+      <div style="position:relative;height:270px"><canvas id="chartModelo"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Despesa por Status do Pedido</div>
+        <div class="chart-insight" id="insight-status">—</div>
+      </div>
+      <div style="position:relative;height:270px"><canvas id="chartStatus"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section-title">&#9672; An&#225;lise de Fornecedores</div>
+
+  <!-- CHARTS ROW 3: Top 10 + Top 5 -->
+  <div class="charts-grid row-6040" style="margin-bottom:.85rem">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Despesa por Fornecedor &mdash; Top 10</div>
+        <div class="chart-insight" id="insight-forn">—</div>
+      </div>
+      <div style="position:relative;height:380px"><canvas id="chartFornecedor"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <div class="chart-title">Ranking Top 5 Fornecedores</div>
+        <div class="chart-insight" id="insight-top5">—</div>
+      </div>
+      <div style="position:relative;height:380px"><canvas id="chartTop5"></canvas></div>
+    </div>
+  </div>
+
+  <div class="section-title">&#9776; Detalhe de Requisi&#231;&#245;es</div>
+
+  <!-- TABLE -->
+  <div class="table-card">
+    <div class="table-header">
+      <div class="table-title">Registro Completo de Requisi&#231;&#245;es FY26</div>
+      <div class="table-controls">
+        <span class="table-count" id="table-count">— registros</span>
+        <input class="search-box" id="searchBox" type="text"
+          placeholder="Buscar fornecedor, descri&#231;&#227;o..." oninput="renderTable()">
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Data</th><th>Requisi&#231;&#227;o</th><th>Pedido</th><th>Descri&#231;&#227;o</th>
+            <th>VIM</th><th>Fornecedor</th><th>Nota Fiscal</th><th>Modelo</th>
+            <th style="text-align:right">Despesa (R$)</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<footer class="footer">
+  Dashboard de Requisi&#231;&#245;es FY26 &mdash; Siemens Energy &middot; Gerado em 27/05/2026 &middot; Dados reais do sistema de compras interno
+</footer>
+
+<script>
+const RAW_DATA = [{"data": "2025-08-05", "solicitante": "Erick", "modelo": "Material", "descricao": "Soquetes GEDORE", "aprovador": "Marco Stella", "requisicao": "1076162433", "pedido": "4501705723", "vim": "2905857", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001438653-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 549.9, "status": "FINALIZADO"}, {"data": "2025-08-05", "solicitante": "Rafael", "modelo": "Servi\u00e7o", "descricao": "Bate Rodas", "aprovador": "Marco Stella", "requisicao": "1076202798", "pedido": "4501706549", "vim": "2925735", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000000689-9", "fornecedor": "ESTRUTURAS E EQUIPAMENTOS", "despesa": 1800.0, "status": "FINALIZADO"}, {"data": "2025-08-12", "solicitante": "Amanda", "modelo": "Material", "descricao": "Materiais Papel e Pintura", "aprovador": "Marco Stella", "requisicao": "1076285290", "pedido": "4501706360", "vim": "2928122", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000126316-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 1271.68, "status": "FINALIZADO"}, {"data": "2025-08-12", "solicitante": "Erick", "modelo": "Material", "descricao": "Buj\u00e3o em SAE 4340", "aprovador": "Marco Stella", "requisicao": "1076285378", "pedido": "4501706362", "vim": "2928500", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000003214-1", "fornecedor": "ZAP USINAGEM E CALDEIRARIA", "despesa": 653.29, "status": "FINALIZADO"}, {"data": "2025-08-12", "solicitante": "Erick", "modelo": "Material", "descricao": "Luva espa\u00e7adora impregna\u00e7\u00e3o", "aprovador": "Marco Stella", "requisicao": "1076285394", "pedido": "4501706365", "vim": "2928499", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000003215-1", "fornecedor": "ZAP USINAGEM E CALDEIRARIA", "despesa": 2298.62, "status": "FINALIZADO"}, {"data": "2025-08-19", "solicitante": "Amanda", "modelo": "Material", "descricao": "Adaptador T", "aprovador": "Marco Stella", "requisicao": "1076351664", "pedido": "4501706868", "vim": "2912973", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000123643-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 648.3, "status": "FINALIZADO"}, {"data": "2025-08-19", "solicitante": "Amanda", "modelo": "Material", "descricao": "BOTIJAO AREZZO e materias", "aprovador": "Marco Stella", "requisicao": "1076351666", "pedido": "4501706869", "vim": "2913952", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000123798-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 1320.95, "status": "FINALIZADO"}, {"data": "2025-08-19", "solicitante": "Erick", "modelo": "Material", "descricao": "CONDUITE DO CABO SOLDA", "aprovador": "Marco Stella", "requisicao": "1076351698", "pedido": "4501706875", "vim": "2910776", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000077661-1", "fornecedor": "ENERGYARC INDUSTRIAL LTDA.", "despesa": 2350.0, "status": "FINALIZADO"}, {"data": "2025-08-21", "solicitante": "Erick", "modelo": "Material", "descricao": "CA131130 - Bucha Guia de Bronze", "aprovador": "Marco Stella", "requisicao": "1076385710", "pedido": "4501707459", "vim": "2916741", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000000891-1", "fornecedor": "MB - COMERCIO E PRESTACAO DE SERVIC", "despesa": 1425.6, "status": "FINALIZADO"}, {"data": "2025-08-27", "solicitante": "Erick", "modelo": "Material", "descricao": "CA131275 - Trava para capacitores REV02", "aprovador": "Marco Stella", "requisicao": "1076455040", "pedido": "4501707908", "vim": "2926678", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000006918-1", "fornecedor": "MOTA - USINAGEM E", "despesa": 21965.0, "status": "FINALIZADO"}, {"data": "2025-08-27", "solicitante": "Erick", "modelo": "Servi\u00e7o", "descricao": "Servi\u00e7o de remo\u00e7\u00e3o, carregamento, transporte interno", "aprovador": "Marco Stella", "requisicao": "1076455045", "pedido": "4501707839", "vim": "2920168", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000004793-9", "fornecedor": "TRANSPORTADORA GALIEGO LTDA. EPP.", "despesa": 20150.0, "status": "FINALIZADO"}, {"data": "2025-08-28", "solicitante": "Erick", "modelo": "OI", "descricao": "TRANSPALETE 2500KG (Paleteiras)", "aprovador": "Marco Stella", "requisicao": "1076499222", "pedido": "4501708373", "vim": "2922134", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001464300-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 12990.0, "status": "FINALIZADO"}, {"data": "2025-08-28", "solicitante": "Erick", "modelo": "OI", "descricao": "Suporte carros de PP 012460; 012461", "aprovador": "Marco Stella", "requisicao": "1076499234", "pedido": "4501708371", "vim": "2951599", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000000365-9", "fornecedor": "USINAGEM PAULISTA LTDA.", "despesa": 11600.0, "status": "FINALIZADO"}, {"data": "2025-08-28", "solicitante": "Erick", "modelo": "OI", "descricao": "Adequa\u00e7\u00e3o NR12 Ensaio BT 012632", "aprovador": "Marco Stella", "requisicao": "1076499309", "pedido": "4501708628", "vim": "2993920", "status_vim": "", "nota_fiscal": "000010140-1", "fornecedor": "AUTOMASAFETY CONSULTORIA IND. E", "despesa": 132011.2, "status": "FINALIZADO"}, {"data": "2025-08-28", "solicitante": "Erick", "modelo": "OI", "descricao": "NR12 Estufa Heat Soaking 03 012096", "aprovador": "Marco Stella", "requisicao": "1076499220", "pedido": "4501708729", "vim": "2966026", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000001083-9", "fornecedor": "AUTOMASAFETY CONSULTORIA IND. E", "despesa": 17430.7, "status": "FINALIZADO"}, {"data": "2025-08-28", "solicitante": "Erick", "modelo": "OI", "descricao": "Carro inox com prateleiras", "aprovador": "Marco Stella", "requisicao": "1076499227", "pedido": "4501708373", "vim": "2922134", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001464300-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 12990.0, "status": "FINALIZADO"}, {"data": "2025-08-28", "solicitante": "Erick", "modelo": "OI", "descricao": "Carro tanque pintura", "aprovador": "Marco Stella", "requisicao": "1076499224", "pedido": "4501708379", "vim": "2962330", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000001173-1", "fornecedor": "CONDUTA - E.R.C. SOLUCOES", "despesa": 11400.0, "status": "FINALIZADO"}, {"data": "2025-08-28", "solicitante": "Erick", "modelo": "OI", "descricao": "Sistema de pintura Airless", "aprovador": "Marco Stella", "requisicao": "1076530490", "pedido": "4501708631", "vim": "2947326", "status_vim": "", "nota_fiscal": "000018404-1", "fornecedor": "FLOWSISTEM SOLUCOES", "despesa": 179352.02, "status": ""}, {"data": "2025-08-28", "solicitante": "Erick", "modelo": "OI", "descricao": "Mand\u00edbula de crava\u00e7\u00e3o", "aprovador": "Marco Stella", "requisicao": "1076499226", "pedido": "4501708378", "vim": "2921170", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000033924-1", "fornecedor": "HILTI DO BRASIL COMERCIAL LTDA.", "despesa": 15894.51, "status": "FINALIZADO"}, {"data": "2025-08-28", "solicitante": "Erick", "modelo": "OI", "descricao": "Capas de eixo", "aprovador": "Marco Stella", "requisicao": "1076596908", "pedido": "4501709214", "vim": "2956948", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000007284-1", "fornecedor": "ROVAMEC USINAGEM LTDA. EPP.", "despesa": 48400.0, "status": "FINALIZADO"}, {"data": "2025-09-01", "solicitante": "Erick", "modelo": "Material", "descricao": "Materiais pintura e papel", "aprovador": "Marco Stella", "requisicao": "1076530492", "pedido": "4501708601", "vim": "2917249", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000124468-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 1665.06, "status": "FINALIZADO"}, {"data": "2025-09-03", "solicitante": "Erick", "modelo": "Material", "descricao": "DISPOSITIVO FIXA\u00c7\u00c3O ROSCA M6 E M10", "aprovador": "Marco Stella", "requisicao": "1076574761", "pedido": "4501708692", "vim": "2917634", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000007167-1", "fornecedor": "ROVAMEC USINAGEM LTDA. EPP.", "despesa": 420.0, "status": "FINALIZADO"}, {"data": "2025-09-03", "solicitante": "Erick", "modelo": "Material", "descricao": "ESCADA ALUMINIO ALULEV INDUSTRIAL Pintura", "aprovador": "Marco Stella", "requisicao": "1076574775", "pedido": "4501708871", "vim": "2919812", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000124913-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 2454.4, "status": "FINALIZADO"}, {"data": "2025-09-03", "solicitante": "Erick", "modelo": "Material", "descricao": "Infraestrutura e el\u00e9trica para Secadores, Gerador de Nitrog\u00eanio e Chiller", "aprovador": "Marco Stella", "requisicao": "1076574932", "pedido": "4501708999", "vim": "2931482", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000003008-9", "fornecedor": "PROCONNECT INSTALACOES LTDA.", "despesa": 30600.0, "status": "FINALIZADO"}, {"data": "2025-09-03", "solicitante": "Erick", "modelo": "Material", "descricao": "CAIXAS PARA O TRANSPORTE DE PAPEL", "aprovador": "Marco Stella", "requisicao": "1076574965", "pedido": "4501709507", "vim": "2923948", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000125497-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 6653.0, "status": "FINALIZADO"}, {"data": "2025-09-12", "solicitante": "Erick", "modelo": "Material", "descricao": "Torquimetro e Paquimetro", "aprovador": "Marco Stella", "requisicao": "1076731871", "pedido": "4501710194", "vim": "2922687", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001464803-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 6860.71, "status": "FINALIZADO"}, {"data": "2025-09-15", "solicitante": "Rafael", "modelo": "Material", "descricao": "Gabarito Pintura", "aprovador": "Marco Stella", "requisicao": "1076763643", "pedido": "4501710190", "vim": "2923546", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000001306-1", "fornecedor": "HMTG BRINDES LTDA.", "despesa": 1097.82, "status": "FINALIZADO"}, {"data": "2025-09-16", "solicitante": "Rafael", "modelo": "Material", "descricao": "Inspe\u00e7ao espelho e lanterna", "aprovador": "Marco Stella", "requisicao": "1076792855", "pedido": "4501710241", "vim": "2923433", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000125400-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 516.28, "status": "FINALIZADO"}, {"data": "2025-09-16", "solicitante": "Rafael", "modelo": "Material", "descricao": "BICO DE SOLDA \u00d88", "aprovador": "Marco Stella", "requisicao": "1076792859", "pedido": "4501710242", "vim": "2927599", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000007199-1", "fornecedor": "ROVAMEC USINAGEM LTDA. EPP.", "despesa": 2985.0, "status": "FINALIZADO"}, {"data": "2025-09-17", "solicitante": "Rafael", "modelo": "Material", "descricao": "Fita de Arquar e parafusos M12 Bobinagem.", "aprovador": "Marco Stella", "requisicao": "1076793131", "pedido": "4501710375", "vim": "2923949", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000125498-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 545.48, "status": "FINALIZADO"}, {"data": "2025-09-18", "solicitante": "Erick", "modelo": "Material", "descricao": "Dispositivo Medi\u00e7\u00e3o de altura com laser  Mq solda Terminal", "aprovador": "Marco Stella", "requisicao": "1076801408", "pedido": "4501710728", "vim": "2922618", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000007178-1", "fornecedor": "ROVAMEC USINAGEM LTDA. EPP.", "despesa": 150.0, "status": "FINALIZADO"}, {"data": "2025-09-22", "solicitante": "Rafael", "modelo": "Material", "descricao": "Microondas, Sanduichera e Mop", "aprovador": "Marco Stella", "requisicao": "1076857491", "pedido": "4501711243", "vim": "2929607", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000126622-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 2180.16, "status": "FINALIZADO"}, {"data": "2025-09-24", "solicitante": "Erick", "modelo": "Material", "descricao": "Brocas 3,2", "aprovador": "Marco Stella", "requisicao": "1076910463", "pedido": "4501711258", "vim": "2925730", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001469513-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 123.6, "status": "FINALIZADO"}, {"data": "2025-09-25", "solicitante": "Erick", "modelo": "Material", "descricao": "Aspirador e Agulhas", "aprovador": "Marco Stella", "requisicao": "1076922949", "pedido": "4501711506", "vim": "2925589", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001469194-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 5319.08, "status": "FINALIZADO"}, {"data": "2025-09-26", "solicitante": "Erick", "modelo": "Material", "descricao": "Bigorna, caneta, pen drive e teclado", "aprovador": "Marco Stella", "requisicao": "1076935991", "pedido": "4501711510", "vim": "2928011", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000126306-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 1676.07, "status": "FINALIZADO"}, {"data": "2025-09-26", "solicitante": "Rafael", "modelo": "Material", "descricao": "Gabarito Pintura", "aprovador": "Marco Stella", "requisicao": "1076936035", "pedido": "4501711521", "vim": "2925413", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000002484-1", "fornecedor": "VERA A. BIANCHINI AFONSO ADESIVOS -", "despesa": 1440.0, "status": "FINALIZADO"}, {"data": "2025-09-30", "solicitante": "Erick", "modelo": "Material", "descricao": "Conexao latao", "aprovador": "Marco Stella", "requisicao": "1076959949", "pedido": "4501711799", "vim": "2927595", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000007196-1", "fornecedor": "ROVAMEC USINAGEM LTDA. EPP.", "despesa": 560.0, "status": "FINALIZADO"}, {"data": "2025-09-30", "solicitante": "Erick", "modelo": "Material", "descricao": "EIXO CHAVETA DUPLA", "aprovador": "Marco Stella", "requisicao": "1076959983", "pedido": "4501711809", "vim": "2927594", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000007195-1", "fornecedor": "ROVAMEC USINAGEM LTDA. EPP.", "despesa": 490.0, "status": "FINALIZADO"}, {"data": "2025-09-30", "solicitante": "Erick", "modelo": "Material", "descricao": "EIXO ENCODER", "aprovador": "Marco Stella", "requisicao": "1076959985", "pedido": "4501711812", "vim": "2927591", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000007194-1", "fornecedor": "ROVAMEC USINAGEM LTDA. EPP.", "despesa": 480.0, "status": "FINALIZADO"}, {"data": "2025-10-01", "solicitante": "Erick", "modelo": "Material", "descricao": "Bate Rodas e Grades", "aprovador": "Marco Stella", "requisicao": "1076974754", "pedido": "4501711958", "vim": "2935694", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000000694-9", "fornecedor": "ESTRUTURAS E EQUIPAMENTOS", "despesa": 8310.0, "status": "FINALIZADO"}, {"data": "2025-10-01", "solicitante": "Erick", "modelo": "Material", "descricao": "Brindes Outubro Rosa", "aprovador": "Marco Stella", "requisicao": "1076975727", "pedido": "4501712874", "vim": "2928454", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000001321-1", "fornecedor": "HMTG BRINDES LTDA.", "despesa": 3265.65, "status": "FINALIZADO"}, {"data": "2025-10-01", "solicitante": "Erick", "modelo": "Material", "descricao": "cintas de I\u00e7amento", "aprovador": "Marco Stella", "requisicao": "1076999654", "pedido": "4501712458", "vim": "2933067", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000019134-2", "fornecedor": "LIFTEC BRASIL SUPRIMENTOS", "despesa": 4763.5, "status": "FINALIZADO"}, {"data": "2025-10-06", "solicitante": "Erick", "modelo": "Material", "descricao": "Jogo de Brocas e Tesouras", "aprovador": "Marco Stella", "requisicao": "1077024890", "pedido": "4501712536", "vim": "2936093", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001485925-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 110.04, "status": "FINALIZADO"}, {"data": "2025-10-07", "solicitante": "Rafael", "modelo": "Material", "descricao": "Cossinetes, Macho e Desandador", "aprovador": "Marco Stella", "requisicao": "1077048985", "pedido": "4501712542", "vim": "2929188", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001474932-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 3123.65, "status": "FINALIZADO"}, {"data": "2025-10-08", "solicitante": "Rafael", "modelo": "Material", "descricao": "CANETA STYLUS TOUCH", "aprovador": "Marco Stella", "requisicao": "1077049523", "pedido": "4501712953", "vim": "2933207", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000127192-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 231.44, "status": "FINALIZADO"}, {"data": "2025-10-09", "solicitante": "Rafael", "modelo": "Material", "descricao": "Ma\u00e7arico", "aprovador": "Marco Stella", "requisicao": "1077072304", "pedido": "4501712973", "vim": "2932396", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000127092-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 604.74, "status": "FINALIZADO"}, {"data": "2025-10-10", "solicitante": "Rafael", "modelo": "Material", "descricao": "espatula e lanterna de cabe\u00e7a", "aprovador": "Marco Stella", "requisicao": "1077072305", "pedido": "4501712975", "vim": "2933909", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000127328-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 1768.48, "status": "FINALIZADO"}, {"data": "2025-10-11", "solicitante": "Rafael", "modelo": "Material", "descricao": "Gabarito Pintura", "aprovador": "Marco Stella", "requisicao": "1077099047", "pedido": "4501713191", "vim": "2930212", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000002486-1", "fornecedor": "VERA A. BIANCHINI AFONSO ADESIVOS -", "despesa": 1440.0, "status": "FINALIZADO"}, {"data": "2025-10-12", "solicitante": "Erick", "modelo": "Material", "descricao": "Conex\u00e3o latao recupera\u00e7\u00e3o", "aprovador": "Marco Stella", "requisicao": "1077131826", "pedido": "4501713602", "vim": "2932980", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000007217-1", "fornecedor": "ROVAMEC USINAGEM LTDA. EPP.", "despesa": 990.0, "status": "FINALIZADO"}, {"data": "2025-10-13", "solicitante": "Rafael", "modelo": "Material", "descricao": "Cola e seringa papel", "aprovador": "Marco Stella", "requisicao": "1077131828", "pedido": "4501713608", "vim": "2935343", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000127687-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 564.55, "status": "FINALIZADO"}, {"data": "2025-10-14", "solicitante": "Erick", "modelo": "Material", "descricao": "sprays manutencao", "aprovador": "Marco Stella", "requisicao": "1077131829", "pedido": "4501713644", "vim": "2932122", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001479225-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 863.45, "status": "FINALIZADO"}, {"data": "2025-10-15", "solicitante": "Amanda", "modelo": "Material", "descricao": "Paquimetros", "aprovador": "Marco Stella", "requisicao": "1077201739", "pedido": "4501714035", "vim": "2934256", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001482451-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 1389.05, "status": "FINALIZADO"}, {"data": "2025-10-16", "solicitante": "Erick", "modelo": "Material", "descricao": "lamina papel e Protetor de cabos piso", "aprovador": "Marco Stella", "requisicao": "1077203306", "pedido": "4501714061", "vim": "2935640", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000127753-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 1164.46, "status": "FINALIZADO"}, {"data": "2025-10-22", "solicitante": "Amanda", "modelo": "Material", "descricao": "BANDEJA DE PLASTICO ATLAS 15CM PRETA 1415P", "aprovador": "Marco Stella", "requisicao": "1077203307", "pedido": "4501714070", "vim": "2935557", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000127738-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 125.0, "status": "FINALIZADO"}, {"data": "2025-10-22", "solicitante": "Rafael", "modelo": "Material", "descricao": "TESOURA DE AVIADOR E PORTA COSSINETES", "aprovador": "Marco Stella", "requisicao": "1077218399", "pedido": "4501714079", "vim": "2940449", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001492898-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 1166.87, "status": "FINALIZADO"}, {"data": "2025-10-23", "solicitante": "Rafael", "modelo": "Material", "descricao": "SACOS LIXOS SUPORTE PARA FITA E FITA 3M", "aprovador": "Marco Stella", "requisicao": "1077233539", "pedido": "4501714648", "vim": "2936758", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000127932-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 1172.31, "status": "FINALIZADO"}, {"data": "2025-10-27", "solicitante": "Erick", "modelo": "Material", "descricao": "Mor\u00e7a para o papel", "aprovador": "Marco Stella", "requisicao": "1077272160", "pedido": "4501714625", "vim": "2940733", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000055090-1", "fornecedor": "OXIGENIO JUNDIAI COML. DE GASES", "despesa": 319.98, "status": "FINALIZADO"}, {"data": "2025-10-28", "solicitante": "Erick", "modelo": "Servi\u00e7o", "descricao": "Servi\u00e7o do cesar calza solicitado pelo erick", "aprovador": "Marco Stella", "requisicao": "1077272808", "pedido": "4501714633", "vim": "2944145", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000000696-9", "fornecedor": "ESTRUTURAS E EQUIPAMENTOS", "despesa": 1849.99, "status": "FINALIZADO"}, {"data": "2025-10-30", "solicitante": "Erick", "modelo": "Material", "descricao": "Camera keynce", "aprovador": "Marco Stella", "requisicao": "1077301335", "pedido": "4501715242", "vim": "2940137", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000168614-1", "fornecedor": "KEYENCE BRASIL COMERCIO DE PRODUTOS", "despesa": 8816.49, "status": "FINALIZADO"}, {"data": "2025-10-31", "solicitante": "Erick", "modelo": "Material", "descricao": "Escovas", "aprovador": "Marco Stella", "requisicao": "1077301980", "pedido": "4501716228", "vim": "2947434", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000000899-1", "fornecedor": "J ASSIS COMERCIO E", "despesa": 1809.0, "status": "FINALIZADO"}, {"data": "2025-11-05", "solicitante": "Erick", "modelo": "Material", "descricao": "Mesa e Bandeija Pintura", "aprovador": "Marco Stella", "requisicao": "1077338975", "pedido": "4501715748", "vim": "2946223", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000001288-1", "fornecedor": "ESTRUTURAS E EQUIPAMENTOS", "despesa": 5750.0, "status": "FINALIZADO"}, {"data": "2025-11-05", "solicitante": "Erick", "modelo": "Material", "descricao": "Painel Ferramentas, Grampo solda robo e fonte Janeilson", "aprovador": "Marco Stella", "requisicao": "1077373171", "pedido": "4501715753", "vim": "2938779", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000128284-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 1100.48, "status": "FINALIZADO"}, {"data": "2025-11-05", "solicitante": "Erick", "modelo": "Material", "descricao": "Antirespingo de Solda", "aprovador": "Marco Stella", "requisicao": "1077373672", "pedido": "4501715846", "vim": "2940180", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000128572-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 876.8, "status": "FINALIZADO"}, {"data": "2025-11-05", "solicitante": "Erick", "modelo": "Material", "descricao": "EBARBADOR DE PARAFUSO, TRENA LASER BOSCH, CAPA CASE NOTEBOOK , MA\u00c7ARICO", "aprovador": "Marco Stella", "requisicao": "1077373882", "pedido": "4501716201", "vim": "2947275", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000129921-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 4921.44, "status": "FINALIZADO"}, {"data": "2025-11-05", "solicitante": "Erick", "modelo": "Material", "descricao": "Jacares", "aprovador": "Marco Stella", "requisicao": "1077373864", "pedido": "4501715890", "vim": "2956795", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000131240-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 2713.0, "status": "FINALIZADO"}, {"data": "2025-11-10", "solicitante": "Erick", "modelo": "Material", "descricao": "Spray solda terminal erick e pa Rejanildo", "aprovador": "Marco Stella", "requisicao": "1077427113", "pedido": "4501716309", "vim": "2942074", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000128933-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 425.12, "status": "FINALIZADO"}, {"data": "2025-11-10", "solicitante": "Erick", "modelo": "Material", "descricao": "Placas de polipropileno", "aprovador": "Marco Stella", "requisicao": "1077453810", "pedido": "4501716728", "vim": "2945843", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000007257-1", "fornecedor": "ROVAMEC USINAGEM LTDA. EPP.", "despesa": 10560.0, "status": "FINALIZADO"}, {"data": "2025-11-13", "solicitante": "Amanda", "modelo": "Material", "descricao": "Lamina de crimpar tecnoprinter", "aprovador": "Marco Stella", "requisicao": "1077464197", "pedido": "4501716780", "vim": "2954081", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000033526-1", "fornecedor": "TECNOCRIMPER INDUSTRIA E", "despesa": 2276.19, "status": "FINALIZADO"}, {"data": "2025-11-14", "solicitante": "Amanda", "modelo": "Material", "descricao": "chave de impacto CP7773", "aprovador": "Marco Stella", "requisicao": "1077478308", "pedido": "4501716901", "vim": "2943611", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001497676-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 11505.87, "status": "FINALIZADO"}, {"data": "2025-11-14", "solicitante": "Amanda", "modelo": "Material", "descricao": "fita alum\u00ednio", "aprovador": "Marco Stella", "requisicao": "1077478309", "pedido": "4501716905", "vim": "2945590", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000129591-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 2464.6, "status": "FINALIZADO"}, {"data": "2025-11-17", "solicitante": "Erick", "modelo": "Material", "descricao": "Cadeiras Montagem", "aprovador": "Marco Stella", "requisicao": "1077494249", "pedido": "4501717146", "vim": "2962828", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000126401-1", "fornecedor": "ALBERFLEX INDUSTRIA DE MOVEIS LTDA.", "despesa": 7011.1, "status": "FINALIZADO"}, {"data": "2025-11-17", "solicitante": "Erick", "modelo": "Material", "descricao": "Placa de Sinaliza\u00e7\u00e3o EHS", "aprovador": "Marco Stella", "requisicao": "1077494250", "pedido": "4501717156", "vim": "2954237", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000002502-1", "fornecedor": "VERA A. BIANCHINI AFONSO ADESIVOS -", "despesa": 440.0, "status": "FINALIZADO"}, {"data": "2025-11-18", "solicitante": "Erick", "modelo": "Material", "descricao": "Placa de Sinaliza\u00e7\u00e3o EHS 2", "aprovador": "Marco Stella", "requisicao": "1077524180", "pedido": "4501716780", "vim": "2954081", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000033526-1", "fornecedor": "TECNOCRIMPER INDUSTRIA E", "despesa": 2276.19, "status": "FINALIZADO"}, {"data": "2025-12-02", "solicitante": "Rafael", "modelo": "Material", "descricao": "Escada para redu\u00e7\u00e3o de movimenta\u00e7\u00e3o Kaizen", "aprovador": "Marco Stella", "requisicao": "1077627217", "pedido": "4501718721", "vim": "2953527", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000130634-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 2635.85, "status": "FINALIZADO"}, {"data": "2025-12-02", "solicitante": "Rafael", "modelo": "Material", "descricao": "ANEL ORING SILICONE 29.51 X 5.33", "aprovador": "Marco Stella", "requisicao": "1077637942", "pedido": "4501718581", "vim": "2949513", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000130280-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 1940.0, "status": "FINALIZADO"}, {"data": "2025-12-02", "solicitante": "Erick", "modelo": "Servi\u00e7o", "descricao": "Programa\u00e7\u00e3o c\u00e9lula de emborrachamento", "aprovador": "Marco Stella", "requisicao": "1077637913", "pedido": "4501718745", "vim": "2962348", "status_vim": "", "nota_fiscal": "000000396-9", "fornecedor": "DCSPRO - AUTOMACAO PROJETOS E", "despesa": 7800.0, "status": "FINALIZADO"}, {"data": "2025-12-02", "solicitante": "Rafael", "modelo": "Material", "descricao": "Carrinho para o microondas Papel", "aprovador": "Marco Stella", "requisicao": "1077650862", "pedido": "4501718864", "vim": "2947169", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001502452-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 566.09, "status": "FINALIZADO"}, {"data": "2025-12-02", "solicitante": "Rafael", "modelo": "Material", "descricao": "Chave hexagonal t e agulhas e bico de fluido", "aprovador": "Marco Stella", "requisicao": "1077650864", "pedido": "4501718866", "vim": "2951605", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001508003-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 321.37, "status": "FINALIZADO"}, {"data": "2025-12-02", "solicitante": "Fernanda", "modelo": "Material", "descricao": "Ferramenta de crimpar e espatula", "aprovador": "Marco Stella", "requisicao": "1077663386", "pedido": "4501719453", "vim": "2949512", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000130276-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 1991.36, "status": "FINALIZADO"}, {"data": "2025-12-02", "solicitante": "Fernanda", "modelo": "Material", "descricao": "Ferramentas montagem de rack e lanterna", "aprovador": "Marco Stella", "requisicao": "1077663390", "pedido": "4501719454", "vim": "2950785", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000130507-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 539.98, "status": "FINALIZADO"}, {"data": "2025-12-09", "solicitante": "Rafael", "modelo": "Material", "descricao": "Placas de Naylon", "aprovador": "Marco Stella", "requisicao": "1077671835", "pedido": "4501719457", "vim": "2950241", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000007270-1", "fornecedor": "ROVAMEC USINAGEM LTDA. EPP.", "despesa": 3980.0, "status": "FINALIZADO"}, {"data": "2025-12-09", "solicitante": "Erick", "modelo": "Material", "descricao": "Octans sensores solda terminal", "aprovador": "Marco Stella", "requisicao": "1077700735", "pedido": "4501719496", "vim": "2971030", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000000129-1", "fornecedor": "OCTANS SISTEMAS DE AUTOMACAO LTDA.", "despesa": 2370.0, "status": "FINALIZADO"}, {"data": "2025-12-11", "solicitante": "Erick", "modelo": "Material", "descricao": "Servi\u00e7o de Inspe\u00e7\u00e3o de cintas", "aprovador": "Marco Stella", "requisicao": "1077728924", "pedido": "4501721350", "vim": "2958135", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000000018-9", "fornecedor": "RIGGING BRASIL PRESTACAO DE", "despesa": 6257.85, "status": "FINALIZADO"}, {"data": "2025-12-11", "solicitante": "Erick", "modelo": "Material", "descricao": "Trava roscada para carrinho da Insersora", "aprovador": "Marco Stella", "requisicao": "1077728946", "pedido": "4501719697", "vim": "2957463", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000000924-1", "fornecedor": "MB - COMERCIO E PRESTACAO DE SERVIC", "despesa": 1900.0, "status": "FINALIZADO"}, {"data": "2025-12-11", "solicitante": "Erick", "modelo": "Material", "descricao": "sistema de giro das prensas", "aprovador": "Marco Stella", "requisicao": "1077772923", "pedido": "4501721225", "vim": "2954028", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000001211-9", "fornecedor": "ZAP USINAGEM E CALDEIRARIA", "despesa": 6140.0, "status": "FINALIZADO"}, {"data": "2026-01-06", "solicitante": "Erick", "modelo": "Material", "descricao": "facas maquina de rabicho e dispositivo manuten\u00e7\u00e3o", "aprovador": "Marco Stella", "requisicao": "1077891990", "pedido": "4501721478", "vim": "2961431", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000007295-1", "fornecedor": "ROVAMEC USINAGEM LTDA. EPP.", "despesa": 3092.0, "status": "FINALIZADO"}, {"data": "2026-01-07", "solicitante": "Erick", "modelo": "Material", "descricao": "Alicate e Espatula", "aprovador": "Marco Stella", "requisicao": "1077905251", "pedido": "4501721647", "vim": "2963457", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000132032-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 1991.36, "status": "FINALIZADO"}, {"data": "2026-01-07", "solicitante": "Amanda", "modelo": "Material", "descricao": "Maquitas a Bateria", "aprovador": "Marco Stella", "requisicao": "1077905254", "pedido": "4501721541", "vim": "2954447", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001512417-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 6584.97, "status": "FINALIZADO"}, {"data": "2026-01-07", "solicitante": "Erick", "modelo": "Material", "descricao": "Maquita a Fio", "aprovador": "Marco Stella", "requisicao": "1077906080", "pedido": "4501721935", "vim": "2958646", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001517597-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 2043.04, "status": "FINALIZADO"}, {"data": "2026-01-09", "solicitante": "Erick", "modelo": "Servi\u00e7o", "descricao": "Servi\u00e7os JVA", "aprovador": "Marco Stella", "requisicao": "1077930846", "pedido": "4501721989", "vim": "2983992", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000000478-9", "fornecedor": "JVA COMERCIO E ASSISTENCIA TECNICA", "despesa": 1455.6, "status": "FINALIZADO"}, {"data": "2026-01-12", "solicitante": "Erick", "modelo": "Servi\u00e7o", "descricao": "Adequa\u00e7\u00e3o dispositivos de solda", "aprovador": "Marco Stella", "requisicao": "1077935790", "pedido": "4501722228", "vim": "", "status_vim": "", "nota_fiscal": "", "fornecedor": "ZAP USINAGEM E CALDEIRARIA", "despesa": 17950.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-01-12", "solicitante": "Rafael", "modelo": "Material", "descricao": "Portas Chaves", "aprovador": "Marco Stella", "requisicao": "1077935996", "pedido": "4501722091", "vim": "2962169", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000132370-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 224.4, "status": "FINALIZADO"}, {"data": "2026-01-12", "solicitante": "Rafael", "modelo": "Material", "descricao": "Frigrobar Balck", "aprovador": "Marco Stella", "requisicao": "1077935997", "pedido": "4501722089", "vim": "2967089", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000133139-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 2263.71, "status": "FINALIZADO"}, {"data": "2026-01-12", "solicitante": "Fernanda", "modelo": "Material", "descricao": "Jacares LEE", "aprovador": "Marco Stella", "requisicao": "1077935998", "pedido": "4501722087", "vim": "2959938", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000131874-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 891.1, "status": "FINALIZADO"}, {"data": "2026-01-14", "solicitante": "Rafael", "modelo": "Material", "descricao": "TVs Rafa", "aprovador": "Marco Stella", "requisicao": "1077946809", "pedido": "4501722488", "vim": "2960749", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000579809-1", "fornecedor": "AGIS EQUIPAMENTOS E SERVICOS DE", "despesa": 15825.0, "status": "FINALIZADO"}, {"data": "2026-01-15", "solicitante": "Erick", "modelo": "OI", "descricao": "Carrinhos transporte de isola\u00e7\u00f5es", "aprovador": "Rodrigo Zerneri", "requisicao": "1077947029", "pedido": "4501723097", "vim": "", "status_vim": "", "nota_fiscal": "", "fornecedor": "ZAP USINAGEM E CALDEIRARIA", "despesa": 28653.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-01-15", "solicitante": "Rafael", "modelo": "Servi\u00e7o", "descricao": "Bate rodas calzas servi\u00e7o", "aprovador": "Marco Stella", "requisicao": "1077954756", "pedido": "4501722484", "vim": "2971642", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000000708-9", "fornecedor": "ESTRUTURAS E EQUIPAMENTOS", "despesa": 3830.0, "status": "FINALIZADO"}, {"data": "2026-01-15", "solicitante": "Rafael", "modelo": "Servi\u00e7o", "descricao": "Bate rodas calza produto", "aprovador": "Marco Stella", "requisicao": "1077954924", "pedido": "4501722484", "vim": "2971642", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000000708-9", "fornecedor": "ESTRUTURAS E EQUIPAMENTOS", "despesa": 3830.0, "status": "FINALIZADO"}, {"data": "2026-01-15", "solicitante": "Amanda", "modelo": "OI", "descricao": "TRANSFORMADOR REDUTOR", "aprovador": "Marco Stella", "requisicao": "1077954925", "pedido": "4501723100", "vim": "2979420", "status_vim": "", "nota_fiscal": "000022277-1", "fornecedor": "PLENA COMERCIAL ELETRICA LTDA.", "despesa": 4720.0, "status": "FINALIZADO"}, {"data": "2026-01-21", "solicitante": "Amanda", "modelo": "Material", "descricao": "Furadeira Revers\u00edvel", "aprovador": "Marco Stella", "requisicao": "1078005526", "pedido": "4501722773", "vim": "2969214", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001533839-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 1234.1, "status": "FINALIZADO"}, {"data": "2026-01-21", "solicitante": "Amanda", "modelo": "Material", "descricao": "cord\u00e3o e manta absorvente - AC6105", "aprovador": "Marco Stella", "requisicao": "1078006488", "pedido": "4501723320", "vim": "2960586", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001757455-1", "fornecedor": "BUNZL EQUIPAMENTOS PARA PROTECAO", "despesa": 2993.8, "status": "FINALIZADO"}, {"data": "2026-01-21", "solicitante": "Erick", "modelo": "Servi\u00e7o", "descricao": "Altera\u00e7\u00e3o dos programas do CLP e da IHM", "aprovador": "Marco Stella", "requisicao": "1078006489", "pedido": "4501723288", "vim": "2963473", "status_vim": "", "nota_fiscal": "000000398-9", "fornecedor": "DCSPRO - AUTOMACAO PROJETOS E", "despesa": 850.0, "status": "FINALIZADO"}, {"data": "2026-01-21", "solicitante": "Erick", "modelo": "Material", "descricao": "TOCHA MIG SBME / GUIA ESPIRAL TEFLON", "aprovador": "Marco Stella", "requisicao": "1078006490", "pedido": "4501723314", "vim": "2961866", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000009218-1", "fornecedor": "AIRGAS BRASIL REPRESENTACAO", "despesa": 2232.4, "status": "FINALIZADO"}, {"data": "2026-01-21", "solicitante": "Erick", "modelo": "Material", "descricao": "CA132278 PROTECAO ENGRENAGEM SISTEMA DE SUBIDA", "aprovador": "Marco Stella", "requisicao": "1078020858", "pedido": "4501723315", "vim": "2966996", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000010280-1", "fornecedor": "USINAGEM E FERRAMENTARIA LUZ & LUZ", "despesa": 2680.0, "status": "FINALIZADO"}, {"data": "2026-01-21", "solicitante": "Erick", "modelo": "Material", "descricao": "CA131279 CALCO SETUP PARA CAIXAS DE 150 E 130 MQ DE SOLDA", "aprovador": "Marco Stella", "requisicao": "1078020859", "pedido": "4501723316", "vim": "2972081", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000010304-1", "fornecedor": "USINAGEM E FERRAMENTARIA LUZ & LUZ", "despesa": 3120.0, "status": "FINALIZADO"}, {"data": "2026-01-22", "solicitante": "Erick", "modelo": "Material", "descricao": "PONTA PUXADOR ENCAPISULAMENTO", "aprovador": "Marco Stella", "requisicao": "1078035478", "pedido": "4501723317", "vim": "2968301", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000007318-1", "fornecedor": "ROVAMEC USINAGEM LTDA. EPP.", "despesa": 4800.0, "status": "FINALIZADO"}, {"data": "2026-01-23", "solicitante": "Erick", "modelo": "Material", "descricao": "Carrinho para Ferramentas Fechado com 5 Gavetas", "aprovador": "Marco Stella", "requisicao": "1078050465", "pedido": "4501723506", "vim": "2960977", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001520732-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 3627.21, "status": "FINALIZADO"}, {"data": "2026-01-23", "solicitante": "Rafael", "modelo": "Material", "descricao": "Carro para Microondas papel", "aprovador": "", "requisicao": "1078050467", "pedido": "4501723521", "vim": "2960832", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001520512-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 4598.27, "status": "FINALIZADO"}, {"data": "2026-01-26", "solicitante": "", "modelo": "Material", "descricao": "Coletores Manuten\u00e7\u00e3o", "aprovador": "", "requisicao": "1078076766", "pedido": "4501723632", "vim": "2985628", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000023866-1", "fornecedor": "ARTPLAN COMERCIAL LTDA.", "despesa": 708.0, "status": "FINALIZADO"}, {"data": "2026-01-23", "solicitante": "", "modelo": "Material", "descricao": "Gabarito Pintura", "aprovador": "", "requisicao": "1078035750", "pedido": "4501723504", "vim": "2961248", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000002510-1", "fornecedor": "VERA A. BIANCHINI AFONSO ADESIVOS -", "despesa": 3600.0, "status": "FINALIZADO"}, {"data": "2026-01-28", "solicitante": "", "modelo": "Material", "descricao": "Fita Pet / Canaleta / Escada", "aprovador": "", "requisicao": "1078102290", "pedido": "4501723869", "vim": "2967487", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000133231-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 4026.56, "status": "FINALIZADO"}, {"data": "2026-01-28", "solicitante": "", "modelo": "Material", "descricao": "FECHO DUPLA ESFERA / Lousa / Oleo bobinagem", "aprovador": "", "requisicao": "1078102304", "pedido": "4501723885", "vim": "2964021", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000132677-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 1081.19, "status": "FINALIZADO"}, {"data": "2026-01-29", "solicitante": "Amanda", "modelo": "Material", "descricao": "tesoura tipo funileiro Irwin", "aprovador": "", "requisicao": "1078117596", "pedido": "4501724346", "vim": "2963355", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001524608-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 1021.3, "status": "FINALIZADO"}, {"data": "2026-01-29", "solicitante": "Erick", "modelo": "Material", "descricao": "Suporte de Carretel", "aprovador": "", "requisicao": "1078118006", "pedido": "4501724225", "vim": "2967432", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000000936-1", "fornecedor": "MB - COMERCIO E PRESTACAO DE SERVIC", "despesa": 1500.0, "status": "FINALIZADO"}, {"data": "2026-01-30", "solicitante": "Erick", "modelo": "Material", "descricao": "ELETRODO TUNGSTENIO", "aprovador": "", "requisicao": "1078118132", "pedido": "4501724222", "vim": "2962830", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000009228-1", "fornecedor": "AIRGAS BRASIL REPRESENTACAO", "despesa": 485.6, "status": "FINALIZADO"}, {"data": "2026-02-02", "solicitante": "Erick", "modelo": "Material", "descricao": "CA131268-D Dispositivo fix cap. Pos. 14", "aprovador": "", "requisicao": "1078153574", "pedido": "4501724347", "vim": "2993108", "status_vim": "Verificar Al\u00edquota de Impostos (PAF_MIGO)", "nota_fiscal": "000003436-1", "fornecedor": "ZAP USINAGEM E CALDEIRARIA", "despesa": 2932.98, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-02-02", "solicitante": "Erick", "modelo": "Material", "descricao": "CENTRALIZADOR PONTA DE FIXA\u00c7\u00c3O", "aprovador": "", "requisicao": "1078153575", "pedido": "4501724517", "vim": "2968237", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000007317-1", "fornecedor": "ROVAMEC USINAGEM LTDA. EPP.", "despesa": 2700.0, "status": "FINALIZADO"}, {"data": "2026-02-03", "solicitante": "Erick", "modelo": "Material", "descricao": "Vassoura bit de soquetes chave fixa e caixa e ferramentas do armario industrial", "aprovador": "", "requisicao": "1078172701", "pedido": "4501724525", "vim": "2971161", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001538669-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 92.81, "status": "FINALIZADO"}, {"data": "2026-02-03", "solicitante": "Erick", "modelo": "Material", "descricao": "BICO MIG F1,2MM M6 L45 D8 TET", "aprovador": "", "requisicao": "1078172894", "pedido": "4501724581", "vim": "2969406", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000080023-1", "fornecedor": "ENERGYARC INDUSTRIAL LTDA.", "despesa": 706.0, "status": "FINALIZADO"}, {"data": "2026-02-04", "solicitante": "Rafael", "modelo": "Material", "descricao": "Molde vazado Papel", "aprovador": "", "requisicao": "1078172925", "pedido": "4501724641", "vim": "2964720", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000002514-1", "fornecedor": "VERA A. BIANCHINI AFONSO ADESIVOS -", "despesa": 1080.0, "status": "FINALIZADO"}, {"data": "2026-02-04", "solicitante": "Erick", "modelo": "Material", "descricao": "Rolamentos BL210ZZ NSK", "aprovador": "", "requisicao": "1078188054", "pedido": "4501724647", "vim": "2964341", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000193584-2", "fornecedor": "JUND-ROL COMERCIO E IMPORTACAO DE", "despesa": 5843.97, "status": "FINALIZADO"}, {"data": "2026-02-05", "solicitante": "Erick", "modelo": "Material", "descricao": "CA123277 - Suporte para facas Bobinadeira", "aprovador": "", "requisicao": "1078202382", "pedido": "4501724784", "vim": "2967760", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000007034-1", "fornecedor": "MOTA - USINAGEM E", "despesa": 2734.24, "status": "FINALIZADO"}, {"data": "2026-02-09", "solicitante": "", "modelo": "Material", "descricao": "JOGO DE SACA-PARAFUSOS   CABO BATERIA DANEVA ADESIVO BLACKOUT BRANCO", "aprovador": "", "requisicao": "1078228155", "pedido": "4501725165", "vim": "2972371", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000134134-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 850.09, "status": "FINALIZADO"}, {"data": "2026-02-09", "solicitante": "Rafael", "modelo": "Material", "descricao": "Adequa\u00e7\u00e3o suporte microondas", "aprovador": "", "requisicao": "1078228156", "pedido": "4501725170", "vim": "2971619", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000000706-9", "fornecedor": "ESTRUTURAS E EQUIPAMENTOS", "despesa": 700.0, "status": "FINALIZADO"}, {"data": "2026-02-09", "solicitante": "Erick", "modelo": "Material", "descricao": "Bate rodas e PROTE\u00c7\u00c3O", "aprovador": "", "requisicao": "1078228157", "pedido": "4501725172", "vim": "2971641", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000000707-9", "fornecedor": "ESTRUTURAS E EQUIPAMENTOS", "despesa": 2625.0, "status": "FINALIZADO"}, {"data": "2026-02-09", "solicitante": "Erick", "modelo": "Material", "descricao": "Furadeira Parafusadeira 3/8 Kit para Fixa\u00e7\u00e3o Organizador Pl\u00e1stico", "aprovador": "", "requisicao": "1078228903", "pedido": "4501725168", "vim": "2966327", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001529672-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 2013.87, "status": "FINALIZADO"}, {"data": "2026-02-09", "solicitante": "", "modelo": "Material", "descricao": "Mangueiras", "aprovador": "", "requisicao": "1078268110", "pedido": "4501725466", "vim": "2970123", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000055810-1", "fornecedor": "OXIGENIO JUNDIAI COML. DE GASES", "despesa": 2545.0, "status": "FINALIZADO"}, {"data": "2026-02-09", "solicitante": "", "modelo": "Material", "descricao": "Suporte parede cabo capacimetro e jacare LEE", "aprovador": "", "requisicao": "1078268363", "pedido": "4501725833", "vim": "2970987", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000133837-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 1869.42, "status": "FINALIZADO"}, {"data": "2026-02-13", "solicitante": "", "modelo": "Material", "descricao": "PROTE\u00c7\u00c3O BUCHA JATO", "aprovador": "", "requisicao": "1078282579", "pedido": "4501725873", "vim": "2979100", "status_vim": "", "nota_fiscal": "000007348-1", "fornecedor": "ROVAMEC USINAGEM LTDA. EPP.", "despesa": 5445.0, "status": "FINALIZADO"}, {"data": "2026-02-13", "solicitante": "Erick", "modelo": "Material", "descricao": "Jogos de macho", "aprovador": "", "requisicao": "1078296827", "pedido": "4501726126", "vim": "2967736", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001532550-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 1581.4, "status": "FINALIZADO"}, {"data": "2026-02-13", "solicitante": "Amanda", "modelo": "OI", "descricao": "OI - Contador de Part\u00edculas", "aprovador": "Rodrigo Zerneri", "requisicao": "1078296994", "pedido": "4501726231", "vim": "2985041", "status_vim": "", "nota_fiscal": "000059776-1", "fornecedor": "INSTRUCAMP INSTRUMENTOS DE", "despesa": 50000.0, "status": "FINALIZADO"}, {"data": "2026-02-13", "solicitante": "Erick", "modelo": "OI", "descricao": "OI -CARRO DE TRANSPORTE P/CAIXAS DO PAPEL", "aprovador": "Rodrigo Zerneri", "requisicao": "1078297007", "pedido": "4501726204", "vim": "2979482", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000010368-1", "fornecedor": "USINAGEM E FERRAMENTARIA LUZ & LUZ", "despesa": 32000.04, "status": "FINALIZADO"}, {"data": "2026-02-13", "solicitante": "Erick", "modelo": "OI", "descricao": "Sensor de vacuo", "aprovador": "Rodrigo Zerneri", "requisicao": "1078297011", "pedido": "4501726208", "vim": "2992781", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000048218-2", "fornecedor": "EDWARDS VACUO LTDA.", "despesa": 15162.78, "status": "FINALIZADO"}, {"data": "2026-02-13", "solicitante": "Erick", "modelo": "OI", "descricao": "Arqueadeira", "aprovador": "Rodrigo Zerneri", "requisicao": "1078297012", "pedido": "4501726220", "vim": "2968159", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000079927-5", "fornecedor": "FROMM SISTEMAS DE EMBALAGENS LTDA.", "despesa": 52517.5, "status": "FINALIZADO"}, {"data": "2026-02-13", "solicitante": "Erick", "modelo": "OI", "descricao": "CAPAC\u00cdMETRO U1732C", "aprovador": "Rodrigo Zerneri", "requisicao": "1078297032", "pedido": "4501726223", "vim": "2984617", "status_vim": "", "nota_fiscal": "000022381-1", "fornecedor": "PLENA COMERCIAL ELETRICA LTDA.", "despesa": 12931.5, "status": "FINALIZADO"}, {"data": "2026-02-13", "solicitante": "", "modelo": "OI", "descricao": "Meg\u00f4metro Digital MD1035X", "aprovador": "Rodrigo Zerneri", "requisicao": "1078297033", "pedido": "4501726226", "vim": "2973013", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000029609-3", "fornecedor": "MEGABRAS INDUSTRIA ELETRONICA LTDA.", "despesa": 20587.84, "status": "FINALIZADO"}, {"data": "2026-02-20", "solicitante": "Erick", "modelo": "Material", "descricao": "Disjuntor Caixa Moldada Tripolar Termomagn\u00e9tico", "aprovador": "Rodrigo Zerneri", "requisicao": "1078318023", "pedido": "4501729365", "vim": "", "status_vim": "", "nota_fiscal": "0", "fornecedor": "EDWARDS VACUO LTDA.", "despesa": 5300.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-02-20", "solicitante": "Rafael", "modelo": "Material", "descricao": "acr\u00edlico cristal transparente", "aprovador": "Rodrigo Zerneri", "requisicao": "1078318034", "pedido": "4501727587", "vim": "2975087", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000002517-1", "fornecedor": "VERA A. BIANCHINI AFONSO ADESIVOS -", "despesa": 495.0, "status": "FINALIZADO"}, {"data": "2026-02-20", "solicitante": "Rafael", "modelo": "Material", "descricao": "FLUXOMETRO BIBIMETRO PARA GAS P/ TOCHA MIG/TIG - ALICATE DESENCAPADOR", "aprovador": "Rodrigo Zerneri", "requisicao": "1078347238", "pedido": "4501727542", "vim": "2972362", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000134117-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 588.4, "status": "FINALIZADO"}, {"data": "2026-02-27", "solicitante": "Amanda", "modelo": "Material", "descricao": "Sargento e vassoura", "aprovador": "Rodrigo Zerneri", "requisicao": "1078382113", "pedido": "4501728415", "vim": "2972583", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001541937-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 628.4, "status": "FINALIZADO"}, {"data": "2026-02-27", "solicitante": "Amanda", "modelo": "Material", "descricao": "MOLYKOTE PASTA D 1KG", "aprovador": "Rodrigo Zerneri", "requisicao": "1078382114", "pedido": "4501728418", "vim": "2973195", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000134374-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 1869.66, "status": "FINALIZADO"}, {"data": "2026-03-02", "solicitante": "Rafael", "modelo": "Material", "descricao": "CAIXAS TECNOTRI", "aprovador": "Rodrigo Zerneri", "requisicao": "1078395817", "pedido": "4501734378", "vim": "", "status_vim": "", "nota_fiscal": "0", "fornecedor": "TECNOTRI", "despesa": 2117.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-03-02", "solicitante": "Rafael", "modelo": "Servi\u00e7o", "descricao": "Ganchos Pintura", "aprovador": "Rodrigo Zerneri", "requisicao": "1078396657", "pedido": "4501729007", "vim": "", "status_vim": "", "nota_fiscal": "0", "fornecedor": "A\u00c7O LIMPO", "despesa": 200.0, "status": "FINALIZADO"}, {"data": "2026-03-04", "solicitante": "Erick", "modelo": "Material", "descricao": "CA123279 - R\u00e9gua dobra do aluminio", "aprovador": "Rodrigo Zerneri", "requisicao": "1078403460", "pedido": "4501728406", "vim": "2979862", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000000943-1", "fornecedor": "MB - COMERCIO E PRESTACAO DE SERVIC", "despesa": 1100.0, "status": "FINALIZADO"}, {"data": "2026-03-09", "solicitante": "Rafael", "modelo": "Material", "descricao": "Cota\u00e7\u00e3o Torquimetro Gedore", "aprovador": "Rodrigo Zerneri", "requisicao": "1078456934", "pedido": "4501729041", "vim": "2974144", "status_vim": "Lan\u00e7ado", "nota_fiscal": "001545764-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 2749.87, "status": "FINALIZADO"}, {"data": "2026-03-09", "solicitante": "Rafael", "modelo": "Material", "descricao": "Capas para Bucha", "aprovador": "Rodrigo Zerneri", "requisicao": "1078457107", "pedido": "4501729063", "vim": "2980241", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000000120-1", "fornecedor": "GOLDEN COMERCIO E ASSISTENCIA", "despesa": 35475.0, "status": "FINALIZADO"}, {"data": "2026-03-10", "solicitante": "Rafael", "modelo": "Material", "descricao": "FITA PETFLEX VERDE 16 x 1.200", "aprovador": "Rodrigo Zerneri", "requisicao": "1078466025", "pedido": "4501729374", "vim": "2982160", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000500618-2", "fornecedor": "CYKLOP DO BRASIL EMBALAGENS SA.", "despesa": 1602.35, "status": "FINALIZADO"}, {"data": "2026-03-11", "solicitante": "Amanda", "modelo": "Material", "descricao": "Termoigometro,espatula recupera\u00e7\u00e3o,Chave inglesa papel", "aprovador": "Rodrigo Zerneri", "requisicao": "1078475057", "pedido": "4501729379", "vim": "2979407", "status_vim": "", "nota_fiscal": "000135478-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 1250.05, "status": "FINALIZADO"}, {"data": "2026-03-11", "solicitante": "Rafael", "modelo": "Servi\u00e7o", "descricao": "Servi\u00e7os Farropilha refor\u00e7ar Dryal Instalar TV na Montagem e servi\u00e7os de alvenaria", "aprovador": "Rodrigo Zerneri", "requisicao": "1078475484", "pedido": "4501729451", "vim": "2994365", "status_vim": "Fornecedor incorreto / N\u00e3o cadastrado (APROVADOR-REQ.)", "nota_fiscal": "000002983-9", "fornecedor": "EPD M EXPORTA\u00c7\u00c3O", "despesa": 5540.0, "status": "FINALIZADO"}, {"data": "2026-03-13", "solicitante": "Rafael", "modelo": "Material", "descricao": "Logitech BCC950 VC 960-00086 -  Cam\u00eara sala de treinamento", "aprovador": "Rodrigo Zerneri", "requisicao": "1078489897", "pedido": "4501729644", "vim": "2990876", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000018938-1", "fornecedor": "WORK PLACE TECNOLOGIA EIRELI", "despesa": 3720.0, "status": "FINALIZADO"}, {"data": "2026-03-13", "solicitante": "Erick", "modelo": "Material", "descricao": "BICO DE CONTATO 1,20 - Recupera\u00e7\u00e3o e Solda Rob\u00f4.", "aprovador": "Rodrigo Zerneri", "requisicao": "1078501929", "pedido": "4501729635", "vim": "2976039", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000055984-1", "fornecedor": "OXIGENIO JUNDIAI COML. DE GASES", "despesa": 967.8, "status": "FINALIZADO"}, {"data": "2026-03-13", "solicitante": "Erick", "modelo": "Material", "descricao": "Termoigometro - Montagem - chave ingles- papel Epatula Recupera\u00e7\u00e3o", "aprovador": "Rodrigo Zerneri", "requisicao": "1078501972", "pedido": "4501729976", "vim": "2979756", "status_vim": "", "nota_fiscal": "000135550-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 1250.05, "status": "FINALIZADO"}, {"data": "2026-03-13", "solicitante": "Erick", "modelo": "Servi\u00e7o", "descricao": "Octans Dispositivo para sensor de laser", "aprovador": "Rodrigo Zerneri", "requisicao": "1078502075", "pedido": "4501729631", "vim": "2990029", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000000157-1", "fornecedor": "OCTANS SISTEMAS DE AUTOMACAO LTDA.", "despesa": 2510.0, "status": "FINALIZADO"}, {"data": "2026-03-13", "solicitante": "", "modelo": "Material", "descricao": "ANEL RS 4MM Bobinagem REGULADOR DE PRESS\u00c3O pintura  HEADSET escritorio", "aprovador": "Rodrigo Zerneri", "requisicao": "1078514531", "pedido": "4501730451", "vim": "2980239", "status_vim": "", "nota_fiscal": "000135641-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 1712.41, "status": "FINALIZADO"}, {"data": "2026-03-18", "solicitante": "Rafael", "modelo": "OI", "descricao": "5 ARMARIOS PREDIO 11 E 4", "aprovador": "Rodrigo Zerneri", "requisicao": "1078538534", "pedido": "4501730537", "vim": "2984711", "status_vim": "", "nota_fiscal": "000353458-1", "fornecedor": "NILKO TECNOLOGIA LTDA.", "despesa": 19725.91, "status": "FINALIZADO"}, {"data": "2026-03-18", "solicitante": "Erick", "modelo": "OI", "descricao": "ALTERACAO CARRO DE PROLIPROPILENO", "aprovador": "Rodrigo Zerneri", "requisicao": "1078538329", "pedido": "4501730025", "vim": "2995775", "status_vim": "", "nota_fiscal": "000000462-9", "fornecedor": "USINAGEM PAULISTA LTDA.", "despesa": 11951.0, "status": "FINALIZADO"}, {"data": "2026-03-18", "solicitante": "Amanda", "modelo": "OI", "descricao": "M\u00c1QUINA DE SOLDA MIG", "aprovador": "Rodrigo Zerneri", "requisicao": "1078670640", "pedido": "", "vim": "", "status_vim": "", "nota_fiscal": "0", "fornecedor": "BOXER", "despesa": 46295.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-03-18", "solicitante": "Amanda", "modelo": "OI", "descricao": "TALHA BANHO DESENGRAXANTE", "aprovador": "Rodrigo Zerneri", "requisicao": "1078538550", "pedido": "4501730060", "vim": "2995873", "status_vim": "Aguardando DANFE (PORTARIA)", "nota_fiscal": "000036125-1", "fornecedor": "STAHL TALHAS EQUIPAMENTOS DE", "despesa": 38000.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-03-18", "solicitante": "Erick", "modelo": "OI", "descricao": "CONJUNTO BALANCIM", "aprovador": "Rodrigo Zerneri", "requisicao": "1078538551", "pedido": "4501730062", "vim": "2990027", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000007092-1", "fornecedor": "MOTA - USINAGEM E", "despesa": 80296.77, "status": "FINALIZADO"}, {"data": "2026-03-18", "solicitante": "Erick", "modelo": "OI", "descricao": "ARQUEADEIRA CYCLOPE", "aprovador": "Rodrigo Zerneri", "requisicao": "1078538552", "pedido": "4501730066", "vim": "-", "status_vim": "", "nota_fiscal": "", "fornecedor": "CYKLOP DO BRASIL EMBALAGENS SA.", "despesa": 13899.0, "status": "FINALIZADO"}, {"data": "2026-03-18", "solicitante": "Erick", "modelo": "OI", "descricao": "BOMBA PARA OLEO ISOLANTE MODELO RZR-2K-FRV", "aprovador": "Rodrigo Zerneri", "requisicao": "1078538553", "pedido": "4501730072", "vim": "2990813", "status_vim": "", "nota_fiscal": "000007071-0", "fornecedor": "RZR - BOMBAS POSITIVAS LTDA. EPP.", "despesa": 39510.0, "status": "FINALIZADO"}, {"data": "2026-03-19", "solicitante": "Amanda", "modelo": "OI", "descricao": "MANDIBULA DE CORTE\nMANDIBULA DE CRAVA\u00c7\u00c3O", "aprovador": "Marco Stella", "requisicao": "1078538562", "pedido": "4501730088", "vim": "2990666", "status_vim": "Aguardando DANFE (PORTARIA)", "nota_fiscal": "000050441-1", "fornecedor": "HILTI DO BRASIL COMERCIAL LTDA.", "despesa": 56906.99, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-03-19", "solicitante": "Amanda", "modelo": "OI", "descricao": "MAQUINA DE CORTAR E CRIMPAR\nCRAVADORA \nBATERIA", "aprovador": "Marco Stella", "requisicao": "1078549783", "pedido": "4501730088", "vim": "2990666", "status_vim": "Aguardando DANFE (PORTARIA)", "nota_fiscal": "000050441-1", "fornecedor": "HILTI DO BRASIL COMERCIAL LTDA.", "despesa": 56906.99, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-03-19", "solicitante": "Amanda", "modelo": "OI", "descricao": "BOMBA RZR 1K FRN", "aprovador": "Marco Stella", "requisicao": "1078549780", "pedido": "4501730163", "vim": "2990814", "status_vim": "", "nota_fiscal": "000007070-0", "fornecedor": "RZR - BOMBAS POSITIVAS LTDA. EPP.", "despesa": 18795.0, "status": "FINALIZADO"}, {"data": "2026-03-19", "solicitante": "Amanda", "modelo": "OI", "descricao": "REBITADORA E\nBATERIA", "aprovador": "Marco Stella", "requisicao": "1078549781", "pedido": "4501730088", "vim": "2990666", "status_vim": "Aguardando DANFE (PORTARIA)", "nota_fiscal": "000050441-1", "fornecedor": "HILTI DO BRASIL COMERCIAL LTDA.", "despesa": 56906.99, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-03-19", "solicitante": "Amanda", "modelo": "OI", "descricao": "PARAFUSADEIRA SIW4AT\nMODULO\nBATERIA", "aprovador": "Marco Stella", "requisicao": "1078549782", "pedido": "4501730088", "vim": "2990666", "status_vim": "Aguardando DANFE (PORTARIA)", "nota_fiscal": "000050441-1", "fornecedor": "HILTI DO BRASIL COMERCIAL LTDA.", "despesa": 56906.99, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-03-20", "solicitante": "Erick", "modelo": "Material", "descricao": "PE\u00c7AS SOBRESSALENTES USINADAS FABRICA", "aprovador": "Rodrigo Zerneri", "requisicao": "1078560927", "pedido": "4501730375", "vim": "2978719", "status_vim": "", "nota_fiscal": "000007345-1", "fornecedor": "ROVAMEC USINAGEM LTDA. EPP.", "despesa": 3560.0, "status": "FINALIZADO"}, {"data": "2026-03-21", "solicitante": "Amanda", "modelo": "Material", "descricao": "CAPA ELETRODO LONGA TF505", "aprovador": "Rodrigo Zerneri", "requisicao": "1078562012", "pedido": "4501730472", "vim": "2978122", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000009388-1", "fornecedor": "AIRGAS BRASIL REPRESENTACAO", "despesa": 355.0, "status": "FINALIZADO"}, {"data": "2026-03-23", "solicitante": "Amanda", "modelo": "OI", "descricao": "Skid de V\u00e1cuo", "aprovador": "Rodrigo Zerneri", "requisicao": "1078569715", "pedido": "4501730948", "vim": "", "status_vim": "", "nota_fiscal": "0", "fornecedor": "LEYBOLD", "despesa": 450000.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-03-24", "solicitante": "Erick", "modelo": "Material", "descricao": "CA131275 - Trava para capacitores", "aprovador": "Rodrigo Zerneri", "requisicao": "1078578598", "pedido": "4501730695", "vim": "2994094", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000007097-1", "fornecedor": "MOTA - USINAGEM E", "despesa": 24589.37, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-03-26", "solicitante": "Erick", "modelo": "OI", "descricao": "Tanque desengraxante Inox", "aprovador": "Rodrigo Zerneri", "requisicao": "1078588392", "pedido": "4501730973", "vim": "-", "status_vim": "", "nota_fiscal": "", "fornecedor": "VLACON", "despesa": 68500.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-03-26", "solicitante": "", "modelo": "Material", "descricao": "CA13280 Conexao calhas a \u00d8  2\"", "aprovador": "Rodrigo Zerneri", "requisicao": "1078606876", "pedido": "4501731331", "vim": "2990028", "status_vim": "Verificar Al\u00edquota de Impostos (PAF_MIGO)", "nota_fiscal": "000003414-1", "fornecedor": "ZAP USINAGEM E CALDEIRARIA", "despesa": 7890.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-03-26", "solicitante": "", "modelo": "OI", "descricao": "Maquina de Jateamento", "aprovador": "Rodrigo Zerneri", "requisicao": "1078628144", "pedido": "4501731532", "vim": "-", "status_vim": "", "nota_fiscal": "", "fornecedor": "TEC JATO", "despesa": 1250000.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-04-02", "solicitante": "Erick", "modelo": "Material", "descricao": "Bico de Solda  1mm CUCRZ manual e Rob\u00f4", "aprovador": "Rodrigo Zerneri", "requisicao": "1078644141", "pedido": "4501731799", "vim": "2981951", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000009442-1", "fornecedor": "AIRGAS BRASIL REPRESENTACAO", "despesa": 894.85, "status": "FINALIZADO"}, {"data": "2026-04-07", "solicitante": "Amanda", "modelo": "Material", "descricao": "LUBRIFICANTE PISTOLA DELVIBIS", "aprovador": "Rodrigo Zerneri", "requisicao": "1078654285", "pedido": "4501732473", "vim": "2986447", "status_vim": "", "nota_fiscal": "000136560-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 1570.96, "status": "FINALIZADO"}, {"data": "2026-04-07", "solicitante": "Erick", "modelo": "Material", "descricao": "Baterias recarregaveis montagem", "aprovador": "Rodrigo Zerneri", "requisicao": "1078654286", "pedido": "4501732485", "vim": "2991368", "status_vim": "", "nota_fiscal": "000136741-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 1181.78, "status": "FINALIZADO"}, {"data": "2026-04-07", "solicitante": "Erick", "modelo": "Material", "descricao": "Sobressalentes solda robo", "aprovador": "Rodrigo Zerneri", "requisicao": "1078654287", "pedido": "4501732487", "vim": "2996519", "status_vim": "Aguardando DANFE (PORTARIA)", "nota_fiscal": "000137977-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 1944.77, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-04-10", "solicitante": "Erick", "modelo": "Material", "descricao": "Parafusadeiras e materiais para montagem", "aprovador": "Rodrigo Zerneri", "requisicao": "1078689333", "pedido": "4501732642", "vim": "2985551", "status_vim": "", "nota_fiscal": "001567713-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 4088.39, "status": "FINALIZADO"}, {"data": "2026-04-10", "solicitante": "Erick", "modelo": "Material", "descricao": "SUPORTE P/ MACARICO JACKWAL 003.049", "aprovador": "Rodrigo Zerneri", "requisicao": "1078689330", "pedido": "4501732662", "vim": "2992038", "status_vim": "", "nota_fiscal": "000137305-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 7189.5, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-04-28", "solicitante": "Amanda", "modelo": "OI", "descricao": "MAQUINA DE FITA GOMADA", "aprovador": "Rodrigo Zerneri", "requisicao": "1078761724", "pedido": "4501735260", "vim": "2997775", "status_vim": "Faturamento Incorreto (COMPRAS)", "nota_fiscal": "000503493-2", "fornecedor": "CYKLOP DO BRASIL EMBALAGENS SA.", "despesa": 9880.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-04-16", "solicitante": "Amanda", "modelo": "Material", "descricao": "ANTIRESPINGO DE SOLDA", "aprovador": "Rodrigo Zerneri", "requisicao": "1078711915", "pedido": "4501733636", "vim": "2993569", "status_vim": "Verificar Al\u00edquota de Impostos (PAF_MIGO)", "nota_fiscal": "000137541-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 876.8, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-04-16", "solicitante": "Erick", "modelo": "Material", "descricao": "BATERIAS PARA REBITADORA", "aprovador": "Rodrigo Zerneri", "requisicao": "1078711917", "pedido": "4501733622", "vim": "2989889", "status_vim": "", "nota_fiscal": "001571280-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 2304.32, "status": "FINALIZADO"}, {"data": "2026-04-16", "solicitante": "Erick", "modelo": "Material", "descricao": "Materias Montagem", "aprovador": "Rodrigo Zerneri", "requisicao": "1078708028", "pedido": "4501733619", "vim": "2991369", "status_vim": "", "nota_fiscal": "000136907-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 1893.2, "status": "FINALIZADO"}, {"data": "2026-04-17", "solicitante": "Erick", "modelo": "Material", "descricao": "Gancho olhal giratorio -Pintura", "aprovador": "Rodrigo Zerneri", "requisicao": "1078718990", "pedido": "4501733865", "vim": "2990272", "status_vim": "Lan\u00e7ado", "nota_fiscal": "000020083-2", "fornecedor": "LIFTEC BRASIL SUPRIMENTOS", "despesa": 1568.07, "status": "FINALIZADO"}, {"data": "2026-04-17", "solicitante": "Erick", "modelo": "Material", "descricao": "ANEL ORING SILICONE 29.51 X 5.33", "aprovador": "Rodrigo Zerneri", "requisicao": "1078718991", "pedido": "4501733867", "vim": "2992738", "status_vim": "", "nota_fiscal": "000137413-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 2195.0, "status": "FINALIZADO"}, {"data": "2026-04-23", "solicitante": "Erick", "modelo": "Material", "descricao": "Guia Expiral Teflon Rob\u00f4", "aprovador": "Rodrigo Zerneri", "requisicao": "1078735748", "pedido": "4501734128", "vim": "2992797", "status_vim": "Verificar Al\u00edquota de Impostos (PAF_MIGO)", "nota_fiscal": "000056361-1", "fornecedor": "OXIGENIO JUNDIAI COML. DE GASES", "despesa": 1395.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-04-24", "solicitante": "Amanda", "modelo": "Material", "descricao": "Capas para Bucha Pintura", "aprovador": "Rodrigo Zerneri", "requisicao": "1078743588", "pedido": "4501734165", "vim": "", "status_vim": "", "nota_fiscal": "0", "fornecedor": "GOLDEN COMERCIO E ASSISTENCIA", "despesa": 35145.0, "status": "FINALIZADO"}, {"data": "2026-04-24", "solicitante": "Erick", "modelo": "Material", "descricao": "Rebitador 3/32\" a 3/16\" 18V - Montagem de Rack", "aprovador": "Rodrigo Zerneri", "requisicao": "1078743591", "pedido": "4501734289", "vim": "2997379", "status_vim": "Aguardando DANFE (PORTARIA)", "nota_fiscal": "001590447-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 10084.67, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-04-28", "solicitante": "Amanda", "modelo": "OI", "descricao": "Elitrifica\u00e7\u00e3o Estufa HS 1", "aprovador": "Rodrigo Zerneri", "requisicao": "1078761728", "pedido": "4501730163", "vim": "2990814", "status_vim": "", "nota_fiscal": "000007070-0", "fornecedor": "RZR - BOMBAS POSITIVAS LTDA. EPP.", "despesa": 18795.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-04-28", "solicitante": "Erick", "modelo": "Servi\u00e7o", "descricao": "Programa\u00e7\u00e3o c\u00e9lula de soldagem terminais", "aprovador": "Rodrigo Zerneri", "requisicao": "1078761771", "pedido": "", "vim": "", "status_vim": "0", "nota_fiscal": "0", "fornecedor": "DCSPRO - AUTOMACAO PROJETOS E", "despesa": 7800.0, "status": "FINALIZADO"}, {"data": "2026-04-28", "solicitante": "Erick", "modelo": "Material", "descricao": "Materiais Montagem", "aprovador": "Rodrigo Zerneri", "requisicao": "1078769748", "pedido": "4501734790", "vim": "2994237", "status_vim": "Aguardando DANFE (PORTARIA)", "nota_fiscal": "001584949-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 3776.01, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-04-28", "solicitante": "Amanda", "modelo": "Material", "descricao": "Alicates para Montagem", "aprovador": "Rodrigo Zerneri", "requisicao": "1078769749", "pedido": "4501734797", "vim": "2994146", "status_vim": "", "nota_fiscal": "001584888-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 302.44, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-04-28", "solicitante": "Erick", "modelo": "Material", "descricao": "Materiais Montagem", "aprovador": "Rodrigo Zerneri", "requisicao": "1078770014", "pedido": "4501734952", "vim": "2995745", "status_vim": "", "nota_fiscal": "000137874-1", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 1467.01, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-04-28", "solicitante": "Erick", "modelo": "Material", "descricao": "FACA DE DECAPE P/ CABO 50MM", "aprovador": "Rodrigo Zerneri", "requisicao": "1078774642", "pedido": "4501735187", "vim": "", "status_vim": "", "nota_fiscal": "0", "fornecedor": "TECNOCRIMPER INDUSTRIA E", "despesa": 2276.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-05-05", "solicitante": "Erick", "modelo": "Material", "descricao": "Rebitadeira DeWALT DCF403", "aprovador": "Rodrigo Zerneri", "requisicao": "1078795394", "pedido": "4501735412", "vim": "2994677", "status_vim": "Verificar Al\u00edquota de Impostos (PAF_MIGO)", "nota_fiscal": "001585658-3", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 2402.89, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-05-06", "solicitante": "Erick", "modelo": "Servi\u00e7o", "descricao": "Servi\u00e7o de liga\u00e7\u00e3o da tubala\u00e7\u00e3o de GLP", "aprovador": "Rodrigo Zerneri", "requisicao": "1078809190", "pedido": "", "vim": "", "status_vim": "", "nota_fiscal": "", "fornecedor": "ARAGAO", "despesa": 3390.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-05-11", "solicitante": "Erick", "modelo": "Material", "descricao": "Guia da Ribitadeir e Facas", "aprovador": "Rodrigo Zerneri", "requisicao": "1078829776", "pedido": "4501736105", "vim": "", "status_vim": "", "nota_fiscal": "", "fornecedor": "ROVAMEC USINAGEM LTDA. EPP.", "despesa": 3390.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-05-12", "solicitante": "Erick", "modelo": "Material", "descricao": "Gabarito de alinhamento das cordoalhas CA131150", "aprovador": "Rodrigo Zerneri", "requisicao": "1078834176", "pedido": "4501736274", "vim": "", "status_vim": "", "nota_fiscal": "", "fornecedor": "ROVAMEC USINAGEM LTDA. EPP.", "despesa": 1990.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-05-12", "solicitante": "Erick", "modelo": "Material", "descricao": "Sobressalentes \u2013 Solda Rob\u00f4", "aprovador": "Rodrigo Zerneri", "requisicao": "1078850172", "pedido": "4501736417", "vim": "2997755", "status_vim": "Verificar Al\u00edquota de Impostos (PAF_MIGO)", "nota_fiscal": "000081090-1", "fornecedor": "ENERGYARC INDUSTRIAL LTDA.", "despesa": 4930.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-05-13", "solicitante": "Erick", "modelo": "Material", "descricao": "GANCHO OLHAL GIRATORIO AUTOMATICO GRAU 8 7-8MM VARAL PINTURA", "aprovador": "Rodrigo Zerneri", "requisicao": "1078851352", "pedido": "4501736424", "vim": "", "status_vim": "", "nota_fiscal": "", "fornecedor": "LIFTEC BRASIL SUPRIMENTOS", "despesa": 3417.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-05-13", "solicitante": "Erick", "modelo": "Material", "descricao": "balancin - REV 02", "aprovador": "Rodrigo Zerneri", "requisicao": "1078851353", "pedido": "4501736440", "vim": "", "status_vim": "", "nota_fiscal": "", "fornecedor": "MOTA - USINAGEM E", "despesa": 15846.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-05-13", "solicitante": "Erick", "modelo": "Material", "descricao": "Parafusos Allen cabe\u00e7a inox M2 X 8mm", "aprovador": "Rodrigo Zerneri", "requisicao": "1078851354", "pedido": "4501736484", "vim": "", "status_vim": "", "nota_fiscal": "", "fornecedor": "MB - COMERCIO E PRESTACAO DE SERVIC", "despesa": 495.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-05-18", "solicitante": "Erick", "modelo": "Material", "descricao": "Parafusadeiras e Limpa Contato Montagem", "aprovador": "Rodrigo Zerneri", "requisicao": "1078899950", "pedido": "4501739476", "vim": "", "status_vim": "", "nota_fiscal": "", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 6082.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-05-18", "solicitante": "Erick", "modelo": "Material", "descricao": "MANCAL LINEAR PARA BATEDOR DO ROBO DE SOLDA", "aprovador": "Rodrigo Zerneri", "requisicao": "1078899951", "pedido": "4501739482", "vim": "", "status_vim": "", "nota_fiscal": "", "fornecedor": "USINAGEM E FERRAMENTARIA LUZ & LUZ", "despesa": 2790.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-05-19", "solicitante": "Amanda", "modelo": "Material", "descricao": "Vaselina e Pa - Pintura", "aprovador": "Rodrigo Zerneri", "requisicao": "1078922878", "pedido": "4501739986", "vim": "", "status_vim": "", "nota_fiscal": "", "fornecedor": "TIAGO DE BROI EIRELI EPP.", "despesa": 1622.82, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-05-19", "solicitante": "Erick", "modelo": "Material", "descricao": "Placa Saca Bobina CA123272", "aprovador": "Rodrigo Zerneri", "requisicao": "1078923021", "pedido": "", "vim": "", "status_vim": "", "nota_fiscal": "", "fornecedor": "MB - COMERCIO E PRESTACAO DE SERVIC", "despesa": 9400.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-05-20", "solicitante": "Erick", "modelo": "OI", "descricao": "Carro posicionador de rolos de alum\u00ednio", "aprovador": "Rodrigo Zerneri", "requisicao": "1078939662", "pedido": "4501740336", "vim": "", "status_vim": "", "nota_fiscal": "", "fornecedor": "CONDUTA - E.R.C. SOLUCOES", "despesa": 26182.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-05-22", "solicitante": "Erick", "modelo": "OI", "descricao": "Sistema de Tratamento de oleo", "aprovador": "Rodrigo Zerneri", "requisicao": "1078939727", "pedido": "", "vim": "", "status_vim": "", "nota_fiscal": "", "fornecedor": "ECO FLUID", "despesa": 592550.0, "status": "EM NEGOCIA\u00c7\u00c3O"}, {"data": "2026-05-22", "solicitante": "Erick", "modelo": "Material", "descricao": "Materiais montagem - grampo, mor\u00e7a, alicate", "aprovador": "", "requisicao": "1078966324", "pedido": "4501743561", "vim": "", "status_vim": "", "nota_fiscal": "", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 1555.88, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-05-26", "solicitante": "Erick", "modelo": "Material", "descricao": "Materiais montagem - trena, centelhador", "aprovador": "Rodrigo Zerneri", "requisicao": "1078966325", "pedido": "4501743532", "vim": "", "status_vim": "", "nota_fiscal": "", "fornecedor": "ANHANGUERA COMERCIO DE", "despesa": 2383.34, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-05-26", "solicitante": "Erick", "modelo": "Material", "descricao": "Dosador de cola - Papel", "aprovador": "", "requisicao": "1078978713", "pedido": "", "vim": "", "status_vim": "", "nota_fiscal": "", "fornecedor": "LUBRISYSTEM", "despesa": 2485.0, "status": "AGUARDANDO ENTREGA"}, {"data": "2026-05-26", "solicitante": "Amanda", "modelo": "Material", "descricao": "Bicos de contatos solda Rob\u00f4", "aprovador": "", "requisicao": "1078985294", "pedido": "", "vim": "", "status_vim": "", "nota_fiscal": "", "fornecedor": "OXIGENIO JUNDIAI COML. DE GASES", "despesa": 1198.0, "status": "AGUARDANDO ENTREGA"}];
+
+// ============================================================
+// HELPERS
+// ============================================================
+function fmtBRL(v){
+  if(!v&&v!==0)return '—';
+  return 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtBRLshort(v){
+  v=Number(v);
+  if(v>=1000000)return 'R$ '+(v/1000000).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'M';
+  if(v>=1000)return 'R$ '+(v/1000).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'K';
+  return 'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function fmtDate(s){if(!s)return '—';const[y,m,d]=s.split('-');return`${d}/${m}/${y}`;}
+function getMonthKey(s){return s?s.substring(0,7):null;}
+const MON=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+function monthLabel(k){const[y,m]=k.split('-');return MON[parseInt(m)-1]+'/'+y.slice(2);}
+function set(id,v){document.getElementById(id).textContent=v;}
+function html(id,v){document.getElementById(id).innerHTML=v;}
+
+const charts={};
+let currentMonths=0;
+
+// ============================================================
+// FILTER
+// ============================================================
+function filterData(months){
+  if(months===0)return RAW_DATA;
+  const now=new Date();
+  const cutoff=new Date(now.getFullYear(),now.getMonth()-months+1,1);
+  return RAW_DATA.filter(r=>r.data&&new Date(r.data)>=cutoff);
+}
+function setFilter(months){
+  currentMonths=months;
+  document.querySelectorAll('.filter-btn').forEach(b=>
+    b.classList.toggle('active',parseInt(b.dataset.months)===months));
+  const data=filterData(months);
+  updateKPIs(data);updateAllCharts(data);renderTable();
+}
+
+// ============================================================
+// KPIs
+// ============================================================
+function updateKPIs(data){
+  const total=data.reduce((s,r)=>s+(r.despesa||0),0);
+  const reqs=data.length;
+  const pedidos=new Set(data.filter(r=>r.pedido).map(r=>r.pedido)).size;
+  const forn=new Set(data.filter(r=>r.fornecedor).map(r=>r.fornecedor)).size;
+  const months=new Set(data.filter(r=>r.data).map(r=>getMonthKey(r.data)));
+  const nm=months.size||1;
+  set('kpi-despesa',fmtBRLshort(total));
+  set('kpi-despesa-sub',fmtBRL(total));
+  set('kpi-reqs',reqs);
+  set('kpi-reqs-sub',`em ${nm} mes${nm>1?'es':''} · ${Math.round(reqs/nm)} req/mês`);
+  set('kpi-pedidos',pedidos);
+  set('kpi-pedidos-sub',`${(pedidos/Math.max(reqs,1)*100).toFixed(0)}% conversão req→PO`);
+  set('kpi-forn',forn);
+  set('kpi-forn-sub','fornecedores ativos');
+  set('kpi-media',fmtBRLshort(total/nm));
+  set('kpi-media-sub',`média de ${nm} meses`);
+  const avgReq = nm > 0 ? (reqs / nm) : 0;
+  set('kpi-avgreq', avgReq.toFixed(1));
+  set('kpi-avgreq-sub', Math.round(avgReq) + ' req/mês · ' + nm + ' meses');
+}
+
+const TOOLTIP={
+  backgroundColor:'rgba(10,10,20,.95)',borderColor:'#252540',borderWidth:1,
+  titleColor:'#e8eaf6',bodyColor:'#7c85b3',
+  padding:12,cornerRadius:10,
+  titleFont:{family:'Inter',weight:'600',size:12},
+  bodyFont:{family:'Inter',size:11},
+};
+const PIE_COLORS=['#c084fc','#00ff9d','#4f8ef7','#ff9f0a','#f72b8e','#06b6d4','#f87171'];
+
+function destroyChart(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+
+// ============================================================
+// CHART 1 — CURVA S: Despesa Acumulada
+// ============================================================
+function buildCurvaS(data){
+  destroyChart('curvas');
+
+  // Group by month
+  const m={};
+  data.forEach(r=>{
+    const k=getMonthKey(r.data);if(!k)return;
+    if(!m[k])m[k]={total:0,count:0};
+    m[k].total+=(r.despesa||0);
+    m[k].count++;
+  });
+  const keys=Object.keys(m).sort();
+  const labels=keys.map(monthLabel);
+  const monthly=keys.map(k=>m[k].total);
+  const counts=keys.map(k=>m[k].count);
+
+  // Cumulative (Curva S)
+  let acc=0;
+  const cumulative=monthly.map(v=>{acc+=v;return acc;});
+  const grandTotal=cumulative[cumulative.length-1]||1;
+
+  // Cumulative % for secondary axis
+  const cumulativePct=cumulative.map(v=>+(v/grandTotal*100).toFixed(1));
+
+  // Find inflection point — month where slope accelerated most
+  let maxDelta=0,inflectionIdx=0;
+  for(let i=1;i<monthly.length;i++){
+    const delta=monthly[i]-monthly[i-1];
+    if(delta>maxDelta){maxDelta=delta;inflectionIdx=i;}
+  }
+
+  html('insight-curvas',
+    `Curva S mostra aceleração de gasto em <strong>${labels[inflectionIdx]}</strong> (+${fmtBRL(maxDelta)}).
+    Últimos 2 meses = <strong>${((monthly.slice(-2).reduce((s,v)=>s+v,0)/grandTotal)*100).toFixed(1)}%</strong> do total acumulado.`);
+
+  const ctx=document.getElementById('chartCurvaS').getContext('2d');
+
+  const gradBar=ctx.createLinearGradient(0,0,0,310);
+  gradBar.addColorStop(0,'rgba(192,132,252,.4)');
+  gradBar.addColorStop(1,'rgba(192,132,252,.04)');
+
+  const gradLine=ctx.createLinearGradient(0,0,0,310);
+  gradLine.addColorStop(0,'rgba(0,255,157,.45)');
+  gradLine.addColorStop(1,'rgba(0,255,157,.02)');
+
+  charts.curvas=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {
+          type:'bar',label:'Gasto Mensal (R$)',data:monthly,
+          backgroundColor:gradBar,borderColor:'rgba(192,132,252,.8)',
+          borderWidth:1.5,borderRadius:5,yAxisID:'y',order:2
+        },
+        {
+          type:'line',label:'Acumulado (R$)',data:cumulative,
+          borderColor:'#00ff9d',backgroundColor:gradLine,
+          pointBackgroundColor:'#00ff9d',pointRadius:5,pointHoverRadius:8,
+          borderWidth:2.5,tension:.35,fill:true,yAxisID:'y',order:1
+        },
+        {
+          type:'line',label:'Req/mês',data:counts,
+          borderColor:'#ff9f0a',backgroundColor:'transparent',
+          pointBackgroundColor:'#ff9f0a',pointRadius:4,pointHoverRadius:6,
+          borderWidth:2,borderDash:[5,3],tension:.3,yAxisID:'y2',order:3
+        }
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'top',labels:{color:'#7c85b3',font:{family:'Inter',size:11},padding:18,boxWidth:12,boxHeight:10}},
+        tooltip:{...TOOLTIP,callbacks:{label:c=>{
+          if(c.dataset.yAxisID==='y')return` ${c.dataset.label}: ${fmtBRL(c.raw)}`;
+          return` Req/mês: ${c.raw}`;
+        }}}
+      },
+      scales:{
+        x:{grid:{color:'rgba(30,30,53,.5)'},ticks:{color:'#7c85b3',font:{family:'Inter',size:10}}},
+        y:{position:'left',grid:{color:'rgba(30,30,53,.5)'},
+          ticks:{color:'#c084fc',font:{family:'Inter',size:10},callback:v=>fmtBRLshort(v)}},
+        y2:{position:'right',grid:{drawOnChartArea:false},
+          ticks:{color:'#ff9f0a',font:{family:'Inter',size:10},stepSize:1}}
+      }
+    }
+  });
+}
+
+// ============================================================
+// CHART 2 — MODELO
+// ============================================================
+function buildModelo(data){
+  destroyChart('modelo');
+  const t={};
+  data.forEach(r=>{const m=r.modelo||'N/A';t[m]=(t[m]||0)+(r.despesa||0);});
+  const sorted=Object.entries(t).sort((a,b)=>b[1]-a[1]);
+  const total=sorted.reduce((s,e)=>s+e[1],0);
+  html('insight-modelo',
+    `<strong>${sorted[0][0]}</strong>: ${fmtBRL(sorted[0][1])} (${(sorted[0][1]/total*100).toFixed(1)}% do total)`);
+  const ctx=document.getElementById('chartModelo').getContext('2d');
+  charts.modelo=new Chart(ctx,{type:'doughnut',
+    data:{labels:sorted.map(e=>e[0]),datasets:[{data:sorted.map(e=>e[1]),
+      backgroundColor:PIE_COLORS,borderColor:'#141422',borderWidth:3,hoverOffset:8}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'64%',
+      plugins:{
+        legend:{position:'bottom',labels:{color:'#7c85b3',font:{family:'Inter',size:11},padding:14,boxWidth:10}},
+        tooltip:{...TOOLTIP,callbacks:{label:c=>
+          ' '+fmtBRL(c.raw)+' ('+((c.raw/total)*100).toFixed(1)+'%)'}}
+      }}
+  });
+}
+
+// ============================================================
+// CHART 3 — STATUS
+// ============================================================
+function buildStatus(data){
+  destroyChart('status');
+  const t={};
+  data.forEach(r=>{const s=r.status||'N/A';t[s]=(t[s]||0)+(r.despesa||0);});
+  const sorted=Object.entries(t).sort((a,b)=>b[1]-a[1]);
+  const total=sorted.reduce((s,e)=>s+e[1],0);
+  const fin=(t['FINALIZADO']||0)/total*100;
+  html('insight-status',
+    `<strong>${fin.toFixed(1)}%</strong> da despesa finalizada &mdash; ${fmtBRL(t['AGUARDANDO ENTREGA']||0)} em aberto`);
+  const SC={'FINALIZADO':'#00ff9d','AGUARDANDO ENTREGA':'#ff9f0a','EM NEGOCIAÇÃO':'#4f8ef7','N/A':'#c084fc'};
+  const ctx=document.getElementById('chartStatus').getContext('2d');
+  charts.status=new Chart(ctx,{type:'doughnut',
+    data:{labels:sorted.map(e=>e[0]),datasets:[{data:sorted.map(e=>e[1]),
+      backgroundColor:sorted.map(e=>SC[e[0]]||'#818cf8'),
+      borderColor:'#141422',borderWidth:3,hoverOffset:8}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'64%',
+      plugins:{
+        legend:{position:'bottom',labels:{color:'#7c85b3',font:{family:'Inter',size:11},padding:14,boxWidth:10}},
+        tooltip:{...TOOLTIP,callbacks:{label:c=>
+          ' '+fmtBRL(c.raw)+' ('+((c.raw/total)*100).toFixed(1)+'%)'}}
+      }}
+  });
+}
+
+// ============================================================
+// CHART 4 — TOP 10 FORNECEDORES
+// ============================================================
+function buildFornecedor(data){
+  destroyChart('fornecedor');
+  const t={};
+  data.forEach(r=>{if(r.fornecedor)t[r.fornecedor]=(t[r.fornecedor]||0)+(r.despesa||0);});
+  const sorted=Object.entries(t).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const total=data.reduce((s,r)=>s+(r.despesa||0),0);
+  const top3pct=((sorted[0][1]+(sorted[1]?sorted[1][1]:0)+(sorted[2]?sorted[2][1]:0))/total*100).toFixed(1);
+  html('insight-forn',
+    `Top 3 fornecedores concentram <strong>${top3pct}%</strong> da despesa total`);
+  const labels=sorted.map(e=>e[0].length>30?e[0].substring(0,28)+'…':e[0]);
+  const values=sorted.map(e=>e[1]);
+  const bgColors=values.map((_,i)=>{
+    if(i===0)return 'rgba(192,132,252,.72)';
+    if(i===1)return 'rgba(0,255,157,.62)';
+    if(i===2)return 'rgba(79,142,247,.58)';
+    if(i<5)return 'rgba(255,159,10,.48)';
+    return 'rgba(100,116,179,.3)';
+  });
+  const ctx=document.getElementById('chartFornecedor').getContext('2d');
+  charts.fornecedor=new Chart(ctx,{type:'bar',
+    data:{labels,datasets:[{label:'Despesa (R$)',data:values,
+      backgroundColor:bgColors,borderColor:bgColors.map(c=>c.replace(/[\d.]+\)$/,'1)')),
+      borderWidth:1,borderRadius:5}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},
+        tooltip:{...TOOLTIP,callbacks:{label:c=>' '+fmtBRL(c.raw)}}},
+      scales:{
+        x:{grid:{color:'rgba(30,30,53,.5)'},ticks:{color:'#7c85b3',font:{family:'Inter',size:10},callback:v=>fmtBRLshort(v)}},
+        y:{grid:{color:'rgba(30,30,53,.3)'},ticks:{color:'#e8eaf6',font:{family:'Inter',size:10}}}
+      }}
+  });
+}
+
+// ============================================================
+// CHART 5 — TOP 5
+// ============================================================
+function buildTop5(data){
+  destroyChart('top5');
+  const t={};
+  data.forEach(r=>{if(r.fornecedor)t[r.fornecedor]=(t[r.fornecedor]||0)+(r.despesa||0);});
+  const sorted=Object.entries(t).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const labels=sorted.map(e=>e[0].split(' ').slice(0,2).join(' '));
+  const values=sorted.map(e=>e[1]);
+  html('insight-top5',`<strong>${labels[0]}</strong>: ${fmtBRLshort(values[0])}`);
+  const cs=['#c084fc','#00ff9d','#4f8ef7','#ff9f0a','#f72b8e'];
+  const ctx=document.getElementById('chartTop5').getContext('2d');
+  charts.top5=new Chart(ctx,{type:'bar',
+    data:{labels,datasets:[{label:'Despesa',data:values,
+      backgroundColor:cs.map(c=>c+'28'),borderColor:cs,borderWidth:2,borderRadius:8}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},
+        tooltip:{...TOOLTIP,callbacks:{label:c=>' '+fmtBRL(c.raw)}}},
+      scales:{
+        x:{grid:{color:'rgba(30,30,53,.5)'},ticks:{color:'#e8eaf6',font:{family:'Inter',size:10},maxRotation:15}},
+        y:{grid:{color:'rgba(30,30,53,.5)'},ticks:{color:'#7c85b3',font:{family:'Inter',size:10},callback:v=>fmtBRLshort(v)}}
+      }}
+  });
+}
+
+function updateAllCharts(data){
+  buildCurvaS(data);buildModelo(data);buildStatus(data);buildFornecedor(data);buildTop5(data);
+}
+
+// ============================================================
+// TABLE
+// ============================================================
+function renderTable(){
+  const data=filterData(currentMonths);
+  const q=(document.getElementById('searchBox').value||'').toLowerCase();
+  const filtered=q?data.filter(r=>
+    (r.fornecedor||'').toLowerCase().includes(q)||
+    (r.descricao||'').toLowerCase().includes(q)||
+    (r.pedido||'').toLowerCase().includes(q)||
+    (r.requisicao||'').toLowerCase().includes(q)||
+    (r.nota_fiscal||'').toLowerCase().includes(q)||
+    (r.modelo||'').toLowerCase().includes(q)
+  ):data;
+  document.getElementById('table-count').textContent=filtered.length+' registros';
+  const smap={'FINALIZADO':'fin','AGUARDANDO ENTREGA':'ent','EM NEGOCIACAO':'neg','EM NEGOCIAÇÃO':'neg'};
+  const mmap={'Material':'mat','Serviço':'srv','OI':'oi'};
+  const rows=filtered.map(r=>{
+    const sc=smap[r.status]||'def';
+    const mc=mmap[r.modelo]||'mat';
+    return`<tr>
+      <td>${fmtDate(r.data)}</td>
+      <td class="bold">${r.requisicao||'—'}</td>
+      <td>${r.pedido||'—'}</td>
+      <td class="bold" title="${(r.descricao||'').replace(/"/g,'&quot;')}" style="max-width:200px">${r.descricao||'—'}</td>
+      <td>${r.vim||'—'}</td>
+      <td title="${(r.fornecedor||'').replace(/"/g,'&quot;')}">${(r.fornecedor||'—').substring(0,28)}${r.fornecedor&&r.fornecedor.length>28?'…':''}</td>
+      <td>${r.nota_fiscal||'—'}</td>
+      <td><span class="mod-badge mod-${mc}">${r.modelo||'—'}</span></td>
+      <td class="mono">${fmtBRL(r.despesa)}</td>
+      <td><span class="badge badge-${sc}">${r.status||'—'}</span></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('tableBody').innerHTML=rows||
+    '<tr><td colspan="10" style="text-align:center;padding:2.5rem;color:#4a5280">Nenhum registro encontrado</td></tr>';
+}
+
+(function(){
+  const data=filterData(0);
+  updateKPIs(data);updateAllCharts(data);renderTable();
+})();
+</script>
+</body>
+</html>
